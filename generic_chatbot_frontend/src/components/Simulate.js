@@ -11,23 +11,34 @@ const Simulate = () => {
   const navigate = useNavigate();
 
   const handleSubmit = (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    if (
-      !botName.trim() ||
-      !conversationId.trim() ||
-      !participantId.trim() ||
-      !studyName.trim() ||
-      !userGroup.trim()
-    ) {
-      alert("Please fill in all fields.");
-      return;
-    }
+  if (
+    !botName.trim() ||
+    !conversationId.trim() ||
+    !participantId.trim() ||
+    !studyName.trim() ||
+    !userGroup.trim()
+  ) {
+    alert("Please fill in all fields.");
+    return;
+  }
 
-    navigate(
-      `/conversation?bot_name=${encodeURIComponent(botName)}&conversation_id=${encodeURIComponent(conversationId)}&participant_id=${encodeURIComponent(participantId)}&study_name=${encodeURIComponent(studyName)}&user_group=${encodeURIComponent(userGroup)}`
-    );
-  };
+  const isVoiceMode = botName.toLowerCase().includes("-voice");
+
+  const route = isVoiceMode ? "/voice-conversation" : "/conversation";
+
+  const params = new URLSearchParams({
+    bot_name: botName,
+    conversation_id: conversationId,
+    participant_id: participantId,
+    study_name: studyName,
+    user_group: userGroup,
+  });
+
+  navigate(`${route}?${params.toString()}`);
+};
+
 
   const handleEditBots = () => {
     navigate("/edit-bots");

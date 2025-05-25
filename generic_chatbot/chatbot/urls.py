@@ -3,6 +3,7 @@ from .views import ChatbotAPIView, health_check
 from .bots import ListBotsAPIView, BotDetailAPIView  # Import from bots.py
 from .conversation import InitializeConversationAPIView  # Import from conversation.py
 from .keystroke import update_keystrokes
+from .voicechat import get_realtime_session, upload_voice_utterance
 
 urlpatterns = [
     # 1) Health Check
@@ -22,4 +23,10 @@ urlpatterns = [
 
     # 6) update keystrokes 
     path('api/update_keystrokes/', update_keystrokes, name = 'update_keystrokes'),
+
+    # 7) get realtime sesion
+    path("api/session/", get_realtime_session, name="get_realtime_session"),
+
+    # 8) upload voice data
+    path("api/upload_voice_utterance/", upload_voice_utterance, name="upload_voice_utterance"),
 ]

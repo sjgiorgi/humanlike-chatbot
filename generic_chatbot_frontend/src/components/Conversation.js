@@ -7,8 +7,8 @@ const Conversation = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
-  /*const apiUrl = "http://0.0.0.0:8000/api";*/
-  const apiUrl = "https://bot.wwbp.org/api";
+  const apiUrl = process.env.REACT_APP_API_URL;
+
 
   const searchParams = new URLSearchParams(window.location.search);
   const botName = searchParams.get("bot_name");
@@ -61,7 +61,7 @@ const Conversation = () => {
     };
   
     initializeConversation();
-  }, [botName, participantId, studyName, surveyId, surveyMetaData, userGroup, conversationId]);
+  }, [apiUrl, botName, participantId, studyName, surveyId, surveyMetaData, userGroup, conversationId]);
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

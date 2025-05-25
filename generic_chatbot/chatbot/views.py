@@ -9,6 +9,7 @@ from datetime import datetime
 from django.core.cache import cache
 from kani import Kani, ChatMessage, ChatRole
 from .models import Conversation, Bot, Utterance
+from .voicechat import get_realtime_session, upload_voice_utterance
 from .bots import ListBotsAPIView, BotDetailAPIView
 from .conversation import InitializeConversationAPIView
 from .runchat import run_chat_round
@@ -19,7 +20,6 @@ engine_instances = {}
 
 def health_check(request):
     return JsonResponse({"status": "ok"})
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ChatbotAPIView(View):
