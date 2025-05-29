@@ -1,0 +1,4 @@
+venv/
+Archive.zip
+*.pyc
+.git/
