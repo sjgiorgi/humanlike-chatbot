@@ -36,4 +36,6 @@ RUN chmod +x /app/entrypoint.sh
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Command to run the application
-CMD ["gunicorn", "generic_chatbot.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "generic_chatbot.wsgi:application", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "5"]

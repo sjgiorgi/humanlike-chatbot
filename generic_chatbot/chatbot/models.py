@@ -22,6 +22,10 @@ class Utterance(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)               # Timestamp
     text = models.TextField()      
 
+    #new fields added for voice chat
+    audio_file = models.FileField(upload_to="utterance_audio/", null=True, blank=True)  # path to saved audio
+    is_voice = models.BooleanField(default=False)  # to distinguish voice vs text utterances
+
     def __str__(self):
         return f"{self.speaker_id}: {self.text[:50]}"
 

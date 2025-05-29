@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "../styles/EditBots.css";
 
-const BASE_URL = process.env.BASE_URL || "https://bot.wwbp.org";
+const BASE_URL = process.env.REACT_APP_BASE_URL;
+
 
 function EditBots() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

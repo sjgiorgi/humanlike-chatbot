@@ -23,10 +23,13 @@ SECRET_KEY = os.getenv('SECRET_KEY','!g8ik7!xk!9xyldg+r75$^@tdt+d')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ["bot.wwbp.org","localhost", "127.0.0.1", "backend", "0.0.0.0"]
+ALLOWED_HOSTS = ["dev.bot.wwbp.org","localhost", "127.0.0.1", "backend", "0.0.0.0","bot.wwbp.org"]
 
-#REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379')
-REDIS_URL = os.getenv('REDIS_URL', 'rediss://humanlikebotcache-5rqgxm.serverless.use1.cache.amazonaws.com:6379')
+if DEBUG:
+    REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379')
+
+if not DEBUG:
+    REDIS_URL = os.getenv('REDIS_URL', 'rediss://humanlikebotcache-5rqgxm.serverless.use1.cache.amazonaws.com:6379')
 
 CACHES = {
     "default": {
@@ -39,16 +42,17 @@ CACHES = {
 }
 
 # Append Elastic Beanstalk Load Balancer Health Check requests since the source host IP address keeps changing
-try:
-    token = requests.put('http://169.254.169.254/latest/api/token',
-                         headers={'X-aws-ec2-metadata-token-ttl-seconds': '60'}).text
-    internal_ip = requests.get('http://169.254.169.254/latest/meta-data/local-ipv4',
-                               headers={'X-aws-ec2-metadata-token': token}).text
-except requests.exceptions.ConnectionError:
-    pass
-else:
-    ALLOWED_HOSTS.append(internal_ip)
-del requests
+if not DEBUG:
+    try:
+        token = requests.put('http://169.254.169.254/latest/api/token',
+                            headers={'X-aws-ec2-metadata-token-ttl-seconds': '60'}).text
+        internal_ip = requests.get('http://169.254.169.254/latest/meta-data/local-ipv4',
+                                headers={'X-aws-ec2-metadata-token': token}).text
+    except requests.exceptions.ConnectionError:
+        pass
+    else:
+        ALLOWED_HOSTS.append(internal_ip)
+    del requests
 
 # Application definition
 
@@ -92,6 +96,7 @@ ROOT_URLCONF = "generic_chatbot.urls"
 
 ASGI_APPLICATION = "generic_chatbot.asgi.application"
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 TEMPLATES = [
     {
@@ -167,6 +172,9 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 X_FRAME_OPTIONS = 'ALLOWALL'
 #consider restricting in production

@@ -12,7 +12,7 @@ done
 
 >&2 echo "✅ MySQL is up - proceeding with migrations"
 
-''' 
+'''
 # Run Django migrations
 echo "Running makemigrations..."
 
@@ -42,9 +42,9 @@ else
     echo "❌ Error loading bots."
     exit 1
 fi
-
->&2 echo "✅ All setup tasks completed. Starting application..."
 '''
+>&2 echo "✅ All setup tasks completed. Starting application..."
+
 
 # Execute the original command (e.g., runserver)
 exec "$@"

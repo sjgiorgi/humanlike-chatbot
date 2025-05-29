@@ -31,7 +31,7 @@ services:
   backend:
     build:
       context: ./generic_chatbot
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     volumes:
       - ./generic_chatbot:/app
     ports:
