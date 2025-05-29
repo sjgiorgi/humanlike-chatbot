@@ -45,7 +45,7 @@ jobs:
       - name: Sync S3 bucket
         run: |
           aws s3 rm s3://${{ secrets.AWS_S3_BUCKET_NAME_FRONTEND }} --recursive
-          aws s3 sync client-react-gritcoach/build/ s3://${{ secrets.AWS_S3_BUCKET_NAME_FRONTEND }} --delete
+          aws s3 sync generic_chatbot_frontend/build/ s3://${{ secrets.AWS_S3_BUCKET_NAME_FRONTEND }} --delete
 
       - name: Invalidate CloudFront cache
         run: |
