@@ -72,7 +72,8 @@ jobs:
       - name: Deploy Django to Elastic Beanstalk
         run: |
           cd generic_chatbot
-          eb init -p "Docker running on 64bit Amazon Linux 2023" ${{ secrets.AWS_BACKEND_APPLICATION_NAME }} --region us-east-1
+          cp Dockerfile.awseb Dockerfile
+          eb init -p docker ${{ secrets.AWS_BACKEND_APPLICATION_NAME }} --region us-east-1
           eb use ${{ secrets.AWS_BACKEND_ENVIRONMENT_NAME }}
           cp Dockerfile.awseb Dockerfile
           eb deploy --timeout 30
