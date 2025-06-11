@@ -6,21 +6,25 @@ from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from asgiref.sync import async_to_sync
 from .models import Conversation, Bot
-from .runchat import save_chat_to_db 
+from .runchat import save_chat_to_db
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class InitializeConversationAPIView(View):
     def post(self, request, *args, **kwargs):
         try:
-            print("[DEBUG] Entering InitializeConversationAPIView.post()...")
+            logger.debug("Entering InitializeConversationAPIView.post()")
 
             try:
                 data = json.loads(request.body)
             except Exception as parse_error:
-                print(f"[DEBUG] JSON parse error: {parse_error}")
+                logger.debug("JSON parse error: %s", parse_error)
                 return JsonResponse({"error": "Invalid JSON in request body."}, status=400)
 
-            print(f"[DEBUG] Received JSON data: {data}")
+            logger.debug("Received JSON data: %r", data)
 
             conversation_id = data.get("conversation_id")
             bot_name = data.get("bot_name")
@@ -32,17 +36,17 @@ class InitializeConversationAPIView(View):
 
             if not bot_name or not conversation_id:
                 return JsonResponse(
-                    {"error": "Both 'bot_name' and 'conversation_id' are required."}, 
+                    {"error": "Both 'bot_name' and 'conversation_id' are required."},
                     status=400
                 )
 
             try:
                 bot = Bot.objects.get(name=bot_name)
-                print(f"[DEBUG] Found bot: {bot_name}")
+                logger.debug("Found bot: %s", bot_name)
             except Bot.DoesNotExist:
                 return JsonResponse({"error": f"No bot found with the name '{bot_name}'."}, status=404)
-            except Exception as bot_fetch_error:
-                print(f"[DEBUG] Error fetching bot: {bot_fetch_error}")
+            except Exception:
+                logger.exception("Error fetching bot")
                 return JsonResponse({"error": "Error fetching the bot from the database."}, status=500)
 
             # Save conversation
@@ -58,9 +62,9 @@ class InitializeConversationAPIView(View):
                     survey_meta_data=survey_meta_data,
                     started_time=datetime.now(),
                 )
-                print("[DEBUG] Conversation created.")
-            except Exception as create_conv_error:
-                print(f"[DEBUG] Error creating Conversation: {create_conv_error}")
+                logger.debug("Conversation created.")
+            except Exception:
+                logger.exception("Error creating Conversation")
                 return JsonResponse({"error": "Failed to create Conversation."}, status=500)
 
             # ✅ Save bot's initial utterance as an assistant message
@@ -73,9 +77,9 @@ class InitializeConversationAPIView(View):
                         bot_name=bot.name,
                         participant_id=None
                     )
-                    print("[DEBUG] Initial bot message saved to DB.")
-                except Exception as save_error:
-                    print(f"[DEBUG] Failed to save initial bot message: {save_error}")
+                    logger.debug("Initial bot message saved to DB.")
+                except Exception:
+                    logger.exception("Failed to save initial bot message")
 
             return JsonResponse({
                 "conversation_id": conversation_id,
@@ -83,6 +87,7 @@ class InitializeConversationAPIView(View):
                 "initial_utterance": bot.initial_utterance or ""
             }, status=200)
 
-        except Exception as e:
-            print(f"[DEBUG] Unhandled exception in InitializeConversationAPIView: {e}")
+        except Exception:
+            logger.exception(
+                "Unhandled exception in InitializeConversationAPIView")
             return JsonResponse({"error": "Unexpected error occurred."}, status=500)

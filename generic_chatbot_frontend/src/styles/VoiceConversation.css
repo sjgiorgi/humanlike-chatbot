@@ -26,9 +26,9 @@
 
 /* Hide transcript messages completely */
 .messages-box,
-.message {
+/* .message {
   display: none;
-}
+} */
 
 /* Voice status feedback */
 .voice-status {

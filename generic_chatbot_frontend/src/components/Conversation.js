@@ -8,12 +8,13 @@ const Conversation = () => {
   const messagesEndRef = useRef(null);
 
   const apiUrl = process.env.REACT_APP_API_URL;
-
+  console.log("🔧 Config:", { apiUrl });
 
   const searchParams = new URLSearchParams(window.location.search);
   const botName = searchParams.get("bot_name");
   const conversationId = searchParams.get("conversation_id");
   const participantId = searchParams.get("participant_id");
+  console.log("🔧 Params:", { botName, conversationId, participantId });
 
   const surveyId = searchParams.get("survey_id") || "";
   const studyName = searchParams.get("study_name") || "";
@@ -22,7 +23,9 @@ const Conversation = () => {
 
   useEffect(() => {
     if (!botName || !participantId) {
-      console.log("Cannot initialize conversation with botname or participantId");
+      console.log(
+        "Cannot initialize conversation with botname or participantId"
+      );
       return;
     }
 
@@ -45,25 +48,45 @@ const Conversation = () => {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to initialize conversation");
+          throw new Error(
+            errorData.error || "Failed to initialize conversation"
+          );
         }
 
         const data = await response.json();
+        console.log("⬇️ Init response payload:", data);
 
         if (data.initial_utterance?.trim()) {
+          console.log("✉️ Bot initial utterance:", data.initial_utterance);
           setMessages([{ sender: "bot", content: data.initial_utterance }]);
         }
-
       } catch (error) {
         console.error("❌ Error initializing conversation:", error);
       }
     };
 
     initializeConversation();
-  }, [apiUrl, botName, participantId, studyName, surveyId, surveyMetaData, userGroup, conversationId]);
-  
+  }, [
+    apiUrl,
+    botName,
+    participantId,
+    studyName,
+    surveyId,
+    surveyMetaData,
+    userGroup,
+    conversationId,
+  ]);
+
+  console.log("🗨️ Current messages:", messages);
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    const domCount = document.querySelectorAll(".message").length;
+    console.log(
+      `🖥️ Rendered DOM nodes vs state: ${domCount} DOM, ${messages.length} state`
+    );
   }, [messages]);
 
   const handleSubmit = async (event) => {
@@ -72,8 +95,12 @@ const Conversation = () => {
       alert("Please enter a message.");
       return;
     }
+    console.log("✉️ Enqueue user message:", message);
 
-    setMessages((prevMessages) => [...prevMessages, { sender: "You", content: message }]);
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { sender: "You", content: message },
+    ]);
     setMessage("");
     setIsTyping(true);
 
@@ -98,7 +125,9 @@ const Conversation = () => {
       }
 
       const data = await response.json();
+      console.log("⬇️ Chatbot response payload:", data);
       setTimeout(() => {
+        console.log("✉️ Enqueue bot reply:", data.response);
         setMessages((prevMessages) => [
           ...prevMessages,
           { sender: "AI Chatbot", content: data.response },
@@ -118,7 +147,12 @@ const Conversation = () => {
         <div className="chat-box">
           <div className="messages-box">
             {messages.map((msg, index) => (
-              <div key={index} className={`message ${msg.sender === "You" ? "sent" : "received"}`}>
+              <div
+                key={index}
+                className={`message ${
+                  msg.sender === "You" ? "sent" : "received"
+                }`}
+              >
                 {msg.content}
               </div>
             ))}
@@ -147,7 +181,9 @@ const Conversation = () => {
               onCut={(e) => e.preventDefault()}
               onContextMenu={(e) => e.preventDefault()}
             />
-            <button type="submit" className="send-button">Send</button>
+            <button type="submit" className="send-button">
+              Send
+            </button>
           </form>
         </div>
       </div>
