@@ -25,7 +25,7 @@ const Conversation = () => {
       console.log("Cannot initialize conversation with botname or participantId");
       return;
     }
-  
+
     const initializeConversation = async () => {
       try {
         console.log("🚀 Initializing conversation...");
@@ -42,7 +42,7 @@ const Conversation = () => {
             survey_meta_data: surveyMetaData,
           }),
         });
-  
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to initialize conversation");
@@ -50,7 +50,6 @@ const Conversation = () => {
 
         const data = await response.json();
 
-        // ✅ Set initial bot message if it exists
         if (data.initial_utterance?.trim()) {
           setMessages([{ sender: "bot", content: data.initial_utterance }]);
         }
@@ -59,7 +58,7 @@ const Conversation = () => {
         console.error("❌ Error initializing conversation:", error);
       }
     };
-  
+
     initializeConversation();
   }, [apiUrl, botName, participantId, studyName, surveyId, surveyMetaData, userGroup, conversationId]);
   
@@ -114,43 +113,43 @@ const Conversation = () => {
   };
 
   return (
-    <div className="conversation-container">
-      <div className="chat-box">
-        <div className="messages-box">
-          {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.sender === "You" ? "sent" : "received"}`}>
-              {msg.content}
-            </div>
-          ))}
-          {isTyping && (
-            <div className="message received typing-indicator">
-              <span className="dot"></span>
-              <span className="dot"></span>
-              <span className="dot"></span>
-            </div>
-          )}
-          <div ref={messagesEndRef}></div>
+    <div className="text-conversation">
+      <div className="conversation-container">
+        <div className="chat-box">
+          <div className="messages-box">
+            {messages.map((msg, index) => (
+              <div key={index} className={`message ${msg.sender === "You" ? "sent" : "received"}`}>
+                {msg.content}
+              </div>
+            ))}
+            {isTyping && (
+              <div className="message received typing-indicator">
+                <span className="dot"></span>
+                <span className="dot"></span>
+                <span className="dot"></span>
+              </div>
+            )}
+            <div ref={messagesEndRef}></div>
+          </div>
+          <form className="message-form" onSubmit={handleSubmit}>
+            <input
+              type="text"
+              className="message-input"
+              placeholder="Type your message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+              onPaste={(e) => {
+                e.preventDefault();
+                alert("You can't paste here!");
+              }}
+              onCopy={(e) => e.preventDefault()}
+              onCut={(e) => e.preventDefault()}
+              onContextMenu={(e) => e.preventDefault()}
+            />
+            <button type="submit" className="send-button">Send</button>
+          </form>
         </div>
-        <form className="message-form" onSubmit={handleSubmit}>
-          <input
-            type="text"
-            className="message-input"
-            placeholder="Type your message..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            required
-            // Prevent paste, copy, and cut
-            onPaste={(e) => {
-              e.preventDefault();
-              alert("You can't paste here!");
-            }}
-            onCopy={(e) => e.preventDefault()}
-            onCut={(e) => e.preventDefault()}
-            // (Optional) Prevent right-click context menu
-            onContextMenu={(e) => e.preventDefault()}
-          />
-          <button type="submit" className="send-button">Send</button>
-        </form>
       </div>
     </div>
   );
