@@ -22,7 +22,9 @@ const Conversation = () => {
 
   useEffect(() => {
     if (!botName || !participantId) {
-      console.log("Cannot initialize conversation with botname or participantId");
+      console.log(
+        "Cannot initialize conversation with botname or participantId"
+      );
       return;
     }
 
@@ -45,7 +47,9 @@ const Conversation = () => {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to initialize conversation");
+          throw new Error(
+            errorData.error || "Failed to initialize conversation"
+          );
         }
 
         const data = await response.json();
@@ -53,15 +57,23 @@ const Conversation = () => {
         if (data.initial_utterance?.trim()) {
           setMessages([{ sender: "bot", content: data.initial_utterance }]);
         }
-
       } catch (error) {
         console.error("❌ Error initializing conversation:", error);
       }
     };
 
     initializeConversation();
-  }, [apiUrl, botName, participantId, studyName, surveyId, surveyMetaData, userGroup, conversationId]);
-  
+  }, [
+    apiUrl,
+    botName,
+    participantId,
+    studyName,
+    surveyId,
+    surveyMetaData,
+    userGroup,
+    conversationId,
+  ]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -73,7 +85,10 @@ const Conversation = () => {
       return;
     }
 
-    setMessages((prevMessages) => [...prevMessages, { sender: "You", content: message }]);
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { sender: "You", content: message },
+    ]);
     setMessage("");
     setIsTyping(true);
 
@@ -118,7 +133,12 @@ const Conversation = () => {
         <div className="chat-box">
           <div className="messages-box">
             {messages.map((msg, index) => (
-              <div key={index} className={`message ${msg.sender === "You" ? "sent" : "received"}`}>
+              <div
+                key={index}
+                className={`message ${
+                  msg.sender === "You" ? "sent" : "received"
+                }`}
+              >
                 {msg.content}
               </div>
             ))}
@@ -147,7 +167,9 @@ const Conversation = () => {
               onCut={(e) => e.preventDefault()}
               onContextMenu={(e) => e.preventDefault()}
             />
-            <button type="submit" className="send-button">Send</button>
+            <button type="submit" className="send-button">
+              Send
+            </button>
           </form>
         </div>
       </div>
