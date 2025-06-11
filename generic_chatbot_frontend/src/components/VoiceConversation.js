@@ -108,19 +108,14 @@ const VoiceConversation = () => {
           },
         };
         dc.send(JSON.stringify(enableTranscription));
-        console.log(
-          "📡 Sent session.update to enable user speech transcription"
-        );
+        console.log("📡 Sent session.update to enable user speech transcription");
       };
 
       dc.onmessage = (event) => {
         const message = JSON.parse(event.data);
         console.log("📨 Message:", message);
 
-        if (
-          message.type ===
-          "conversation.item.input_audio_transcription.completed"
-        ) {
+        if (message.type === "conversation.item.input_audio_transcription.completed") {
           const transcript = message.transcript?.trim();
           if (transcript) {
             console.log("🗣️ USER FINAL TRANSCRIPT:", transcript);
@@ -146,17 +141,14 @@ const VoiceConversation = () => {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const sdpResponse = await fetch(
-        "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
-        {
-          method: "POST",
-          body: offer.sdp,
-          headers: {
-            Authorization: `Bearer ${client_secret.value}`,
-            "Content-Type": "application/sdp",
-          },
-        }
-      );
+      const sdpResponse = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17", {
+        method: "POST",
+        body: offer.sdp,
+        headers: {
+          Authorization: `Bearer ${client_secret.value}`,
+          "Content-Type": "application/sdp",
+        },
+      });
 
       const answer = { type: "answer", sdp: await sdpResponse.text() };
       await pc.setRemoteDescription(answer);
@@ -180,37 +172,32 @@ const VoiceConversation = () => {
   };
 
   return (
-    <div className="voice-conversation">
-      <div className="conversation-container">
-        <div className="chat-box">
-          <div className="voice-status">
-            {isStreaming ? (
-              <p className="status-text">🎤 Listening...</p>
-            ) : (
-              <p className="status-text">Press the button to start talking</p>
-            )}
-            {isTyping && (
-              <div className="typing-indicator">
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </div>
-            )}
-          </div>
-          <div className="voice-controls">
-            {!isStreaming ? (
-              <button className="send-button" onClick={startVoiceConversation}>
-                🎙️ Start Voice Chat
-              </button>
-            ) : (
-              <button
-                className="send-button stop"
-                onClick={stopVoiceConversation}
-              >
-                ⏹️ Stop
-              </button>
-            )}
-          </div>
+    <div className="conversation-container">
+      <div className="chat-box">
+        <div className="voice-status">
+          {isStreaming ? (
+            <p className="status-text">🎤 Listening...</p>
+          ) : (
+            <p className="status-text">Press the button to start talking</p>
+          )}
+          {isTyping && (
+            <div className="typing-indicator">
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </div>
+          )}
+        </div>
+        <div className="voice-controls">
+          {!isStreaming ? (
+            <button className="send-button" onClick={startVoiceConversation}>
+              🎙️ Start Voice Chat
+            </button>
+          ) : (
+            <button className="send-button stop" onClick={stopVoiceConversation}>
+              ⏹️ Stop
+            </button>
+          )}
         </div>
       </div>
     </div>

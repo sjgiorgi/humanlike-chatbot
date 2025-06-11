@@ -9,6 +9,7 @@ const Conversation = () => {
 
   const apiUrl = process.env.REACT_APP_API_URL;
 
+
   const searchParams = new URLSearchParams(window.location.search);
   const botName = searchParams.get("bot_name");
   const conversationId = searchParams.get("conversation_id");
@@ -60,7 +61,7 @@ const Conversation = () => {
 
     initializeConversation();
   }, [apiUrl, botName, participantId, studyName, surveyId, surveyMetaData, userGroup, conversationId]);
-
+  
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
