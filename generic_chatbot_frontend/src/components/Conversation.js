@@ -8,12 +8,13 @@ const Conversation = () => {
   const messagesEndRef = useRef(null);
 
   const apiUrl = process.env.REACT_APP_API_URL;
-
+  console.log("🔧 Config:", { apiUrl });
 
   const searchParams = new URLSearchParams(window.location.search);
   const botName = searchParams.get("bot_name");
   const conversationId = searchParams.get("conversation_id");
   const participantId = searchParams.get("participant_id");
+  console.log("🔧 Params:", { botName, conversationId, participantId });
 
   const surveyId = searchParams.get("survey_id") || "";
   const studyName = searchParams.get("study_name") || "";
@@ -53,8 +54,10 @@ const Conversation = () => {
         }
 
         const data = await response.json();
+        console.log("⬇️ Init response payload:", data);
 
         if (data.initial_utterance?.trim()) {
+          console.log("✉️ Bot initial utterance:", data.initial_utterance);
           setMessages([{ sender: "bot", content: data.initial_utterance }]);
         }
       } catch (error) {
@@ -74,8 +77,16 @@ const Conversation = () => {
     conversationId,
   ]);
 
+  console.log("🗨️ Current messages:", messages);
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    const domCount = document.querySelectorAll(".message").length;
+    console.log(
+      `🖥️ Rendered DOM nodes vs state: ${domCount} DOM, ${messages.length} state`
+    );
   }, [messages]);
 
   const handleSubmit = async (event) => {
@@ -84,6 +95,7 @@ const Conversation = () => {
       alert("Please enter a message.");
       return;
     }
+    console.log("✉️ Enqueue user message:", message);
 
     setMessages((prevMessages) => [
       ...prevMessages,
@@ -113,7 +125,9 @@ const Conversation = () => {
       }
 
       const data = await response.json();
+      console.log("⬇️ Chatbot response payload:", data);
       setTimeout(() => {
+        console.log("✉️ Enqueue bot reply:", data.response);
         setMessages((prevMessages) => [
           ...prevMessages,
           { sender: "AI Chatbot", content: data.response },
