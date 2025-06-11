@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../styles/EditBots.css";
 
-const BASE_URL = process.env.REACT_APP_BASE_URL;
-
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 function EditBots() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -58,7 +57,13 @@ function EditBots() {
         body: JSON.stringify(newBot),
       });
       if (!response.ok) throw new Error(`Failed to create new bot`);
-      setNewBot({ name: "", model_type: "", model_id: "", prompt: "", initial_utterance: "" });
+      setNewBot({
+        name: "",
+        model_type: "",
+        model_id: "",
+        prompt: "",
+        initial_utterance: "",
+      });
       fetchBots();
     } catch (error) {
       alert(`Error adding bot: ${error.message}`);
@@ -87,7 +92,13 @@ function EditBots() {
       });
       if (!response.ok) throw new Error(`Failed to update bot`);
       setEditBotId(null);
-      setEditForm({ name: "", model_type: "", model_id: "", prompt: "", initial_utterance: "" });
+      setEditForm({
+        name: "",
+        model_type: "",
+        model_id: "",
+        prompt: "",
+        initial_utterance: "",
+      });
       fetchBots();
     } catch (error) {
       alert(`Error updating bot: ${error.message}`);
@@ -132,20 +143,52 @@ function EditBots() {
       {/* Add New Bot */}
       <h2>Add a New Bot</h2>
       <form onSubmit={handleAddBot}>
-        <div><label>Name:</label>
-          <input type="text" value={newBot.name} required onChange={(e) => setNewBot({ ...newBot, name: e.target.value })} />
+        <div>
+          <label>Name:</label>
+          <input
+            type="text"
+            value={newBot.name}
+            required
+            onChange={(e) => setNewBot({ ...newBot, name: e.target.value })}
+          />
         </div>
-        <div><label>Model Type:</label>
-          <input type="text" value={newBot.model_type} required onChange={(e) => setNewBot({ ...newBot, model_type: e.target.value })} />
+        <div>
+          <label>Model Type:</label>
+          <input
+            type="text"
+            value={newBot.model_type}
+            required
+            onChange={(e) =>
+              setNewBot({ ...newBot, model_type: e.target.value })
+            }
+          />
         </div>
-        <div><label>Model ID:</label>
-          <input type="text" value={newBot.model_id} required onChange={(e) => setNewBot({ ...newBot, model_id: e.target.value })} />
+        <div>
+          <label>Model ID:</label>
+          <input
+            type="text"
+            value={newBot.model_id}
+            required
+            onChange={(e) => setNewBot({ ...newBot, model_id: e.target.value })}
+          />
         </div>
-        <div><label>Prompt:</label>
-          <input type="text" value={newBot.prompt} onChange={(e) => setNewBot({ ...newBot, prompt: e.target.value })} />
+        <div>
+          <label>Prompt:</label>
+          <input
+            type="text"
+            value={newBot.prompt}
+            onChange={(e) => setNewBot({ ...newBot, prompt: e.target.value })}
+          />
         </div>
-        <div><label>Initial Utterance (optional):</label>
-          <input type="text" value={newBot.initial_utterance} onChange={(e) => setNewBot({ ...newBot, initial_utterance: e.target.value })} />
+        <div>
+          <label>Initial Utterance (optional):</label>
+          <input
+            type="text"
+            value={newBot.initial_utterance}
+            onChange={(e) =>
+              setNewBot({ ...newBot, initial_utterance: e.target.value })
+            }
+          />
         </div>
         <button type="submit">Add Bot</button>
       </form>
@@ -179,7 +222,9 @@ function EditBots() {
                   <td>{bot.initial_utterance}</td>
                   <td>
                     <button onClick={() => handleEditClick(bot)}>Edit</button>
-                    <button onClick={() => handleDeleteBot(bot.id)}>Delete</button>
+                    <button onClick={() => handleDeleteBot(bot.id)}>
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -193,20 +238,61 @@ function EditBots() {
         <div className="edit-form">
           <h2>Edit Bot (ID: {editBotId})</h2>
           <form onSubmit={handleUpdateBot}>
-            <div><label>Name:</label>
-              <input type="text" value={editForm.name} required onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+            <div>
+              <label>Name:</label>
+              <input
+                type="text"
+                value={editForm.name}
+                required
+                onChange={(e) =>
+                  setEditForm({ ...editForm, name: e.target.value })
+                }
+              />
             </div>
-            <div><label>Model Type:</label>
-              <input type="text" value={editForm.model_type} required onChange={(e) => setEditForm({ ...editForm, model_type: e.target.value })} />
+            <div>
+              <label>Model Type:</label>
+              <input
+                type="text"
+                value={editForm.model_type}
+                required
+                onChange={(e) =>
+                  setEditForm({ ...editForm, model_type: e.target.value })
+                }
+              />
             </div>
-            <div><label>Model ID:</label>
-              <input type="text" value={editForm.model_id} required onChange={(e) => setEditForm({ ...editForm, model_id: e.target.value })} />
+            <div>
+              <label>Model ID:</label>
+              <input
+                type="text"
+                value={editForm.model_id}
+                required
+                onChange={(e) =>
+                  setEditForm({ ...editForm, model_id: e.target.value })
+                }
+              />
             </div>
-            <div><label>Prompt:</label>
-              <input type="text" value={editForm.prompt} onChange={(e) => setEditForm({ ...editForm, prompt: e.target.value })} />
+            <div>
+              <label>Prompt:</label>
+              <input
+                type="text"
+                value={editForm.prompt}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, prompt: e.target.value })
+                }
+              />
             </div>
-            <div><label>Initial Utterance (optional):</label>
-              <input type="text" value={editForm.initial_utterance} onChange={(e) => setEditForm({ ...editForm, initial_utterance: e.target.value })} />
+            <div>
+              <label>Initial Utterance (optional):</label>
+              <input
+                type="text"
+                value={editForm.initial_utterance}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    initial_utterance: e.target.value,
+                  })
+                }
+              />
             </div>
             <button type="submit">Update Bot</button>
           </form>
