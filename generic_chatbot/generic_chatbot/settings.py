@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -97,6 +98,24 @@ ROOT_URLCONF = "generic_chatbot.urls"
 ASGI_APPLICATION = "generic_chatbot.asgi.application"
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+MODERATION_VALUES_FOR_BLOCKED = json.loads(
+    os.environ.get(
+        "MODERATION_VALUES_FOR_BLOCKED",
+        """{
+            "harassment": 0.5,
+            "harassment/threatening": 0.1,
+            "hate": 0.5,
+            "hate/threatening": 0.1,
+            "self-harm": 0.2,
+            "self-harm/instructions": 0.5,
+            "self-harm/intent": 0.7,
+            "sexual": 0.5,
+            "sexual/minors": 0.2,
+            "violence": 0.7,
+            "violence/graphic": 0.8
+        }""",
+    )
+)
 
 TEMPLATES = [
     {
