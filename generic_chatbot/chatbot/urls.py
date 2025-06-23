@@ -1,9 +1,9 @@
 from django.urls import path
 from .views import ChatbotAPIView, health_check
-from .bots import ListBotsAPIView, BotDetailAPIView  # Import from bots.py
-from .conversation import InitializeConversationAPIView  # Import from conversation.py
-from .keystroke import update_keystrokes
-from .voicechat import get_realtime_session, upload_voice_utterance
+from .services.bots import ListBotsAPIView, BotDetailAPIView  # Import from bots.py
+from .services.conversation import InitializeConversationAPIView  # Import from conversation.py
+from .services.keystroke import update_keystrokes
+from .services.voicechat import get_realtime_session, upload_voice_utterance
 
 urlpatterns = [
     # 1) Health Check

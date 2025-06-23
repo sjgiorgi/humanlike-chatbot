@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from asgiref.sync import async_to_sync
-from .models import Conversation, Bot
+from ..models import Conversation, Bot
 from .runchat import save_chat_to_db
 import logging
 

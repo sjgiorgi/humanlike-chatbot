@@ -1,7 +1,7 @@
 from kani import ChatMessage, ChatRole, Kani
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
-from .models import Bot, Conversation, Utterance
+from ..models import Bot, Conversation, Utterance
 from server.engine import get_or_create_engine
 import time
 import random

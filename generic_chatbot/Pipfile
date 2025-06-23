@@ -21,6 +21,8 @@ asgiref = "*"
 python-dotenv = "*"
 django-redis = "*"
 whitenoise = "*"
+nltk = "*"
+certifi = "*"
 
 [requires]
 python_version = "3.11"

@@ -1,38 +1,32 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import MessageList from "./MessageList";
+import ChatInput from "./ChatInput";
 import "../styles/Conversation.css";
+
+const TYPING_INTERVAL = 500; // milliseconds
 
 const Conversation = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef(null);
 
   const apiUrl = process.env.REACT_APP_API_URL;
-  console.log("🔧 Config:", { apiUrl });
-
-  const searchParams = new URLSearchParams(window.location.search);
-  const botName = searchParams.get("bot_name");
-  const conversationId = searchParams.get("conversation_id");
-  const participantId = searchParams.get("participant_id");
-  console.log("🔧 Params:", { botName, conversationId, participantId });
-
-  const surveyId = searchParams.get("survey_id") || "";
-  const studyName = searchParams.get("study_name") || "";
-  const userGroup = searchParams.get("user_group") || "";
+  const params = new URLSearchParams(window.location.search);
+  const botName = params.get("bot_name");
+  const conversationId = params.get("conversation_id");
+  const participantId = params.get("participant_id");
+  const surveyId = params.get("survey_id") || "";
+  const studyName = params.get("study_name") || "";
+  const userGroup = params.get("user_group") || "";
   const surveyMetaData = window.location.href;
 
+  // Initialize conversation on mount
   useEffect(() => {
-    if (!botName || !participantId) {
-      console.log(
-        "Cannot initialize conversation with botname or participantId"
-      );
-      return;
-    }
+    if (!botName || !participantId) return;
 
-    const initializeConversation = async () => {
+    const initConv = async () => {
       try {
-        console.log("🚀 Initializing conversation...");
-        const response = await fetch(`${apiUrl}/initialize_conversation/`, {
+        const res = await fetch(`${apiUrl}/initialize_conversation/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -45,97 +39,90 @@ const Conversation = () => {
             survey_meta_data: surveyMetaData,
           }),
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.error || "Failed to initialize conversation"
-          );
-        }
-
-        const data = await response.json();
-        console.log("⬇️ Init response payload:", data);
-
+        if (!res.ok) throw new Error((await res.json()).error || "Init failed");
+        const data = await res.json();
         if (data.initial_utterance?.trim()) {
-          console.log("✉️ Bot initial utterance:", data.initial_utterance);
-          setMessages([{ sender: "bot", content: data.initial_utterance }]);
+          setMessages([
+            { sender: "AI Chatbot", content: data.initial_utterance },
+          ]);
         }
-      } catch (error) {
-        console.error("❌ Error initializing conversation:", error);
+      } catch (err) {
+        console.error("Failed to initialize conversation:", err);
       }
     };
-
-    initializeConversation();
+    initConv();
   }, [
     apiUrl,
     botName,
+    conversationId,
     participantId,
     studyName,
     surveyId,
-    surveyMetaData,
     userGroup,
-    conversationId,
+    surveyMetaData,
   ]);
 
-  console.log("🗨️ Current messages:", messages);
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    const domCount = document.querySelectorAll(".message").length;
-    console.log(
-      `🖥️ Rendered DOM nodes vs state: ${domCount} DOM, ${messages.length} state`
+  // Reveal chunks one by one
+  const revealChunks = (chunks) => {
+    // throw away any totally empty strings
+    const valid = chunks.filter(
+      (c) => typeof c === "string" && c.trim().length > 0
     );
-  }, [messages]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (message.trim() === "") {
+    if (valid.length === 0) {
+      setIsTyping(false);
+      return;
+    }
+
+    valid.forEach((chunk, i) => {
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          { sender: "AI Chatbot", content: chunk },
+        ]);
+
+        // after last one, switch off typing
+        if (i === valid.length - 1) {
+          setIsTyping(false);
+        }
+      }, i * TYPING_INTERVAL);
+    });
+  };
+
+  // Handle user send
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!message.trim()) {
       alert("Please enter a message.");
       return;
     }
-    console.log("✉️ Enqueue user message:", message);
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { sender: "You", content: message },
-    ]);
+    setMessages((prev) => [...prev, { sender: "You", content: message }]);
     setMessage("");
     setIsTyping(true);
 
     try {
-      console.log(`📤 Sending message: ${message}`);
-      const response = await fetch(`${apiUrl}/chatbot/`, {
+      const res = await fetch(`${apiUrl}/chatbot/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
           bot_name: botName,
-          participant_id: participantId,
           conversation_id: conversationId,
+          participant_id: participantId,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.error || "Something went wrong"}`);
+      if (!res.ok) {
+        const err = await res.json();
+        alert(`Error: ${err.error || "Something went wrong"}`);
         setIsTyping(false);
         return;
       }
-
-      const data = await response.json();
-      console.log("⬇️ Chatbot response payload:", data);
-      setTimeout(() => {
-        console.log("✉️ Enqueue bot reply:", data.response);
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { sender: "AI Chatbot", content: data.response },
-        ]);
-        setIsTyping(false);
-      }, 500);
-    } catch (error) {
-      console.error("Error sending message:", error);
+      const data = await res.json();
+      const chunks = data.response_chunks || [data.response];
+      revealChunks(chunks);
+    } catch (err) {
+      console.error("Error sending message:", err);
       alert("An error occurred. Please try again.");
       setIsTyping(false);
     }
@@ -145,46 +132,12 @@ const Conversation = () => {
     <div className="text-conversation">
       <div className="conversation-container">
         <div className="chat-box">
-          <div className="messages-box">
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`message ${
-                  msg.sender === "You" ? "sent" : "received"
-                }`}
-              >
-                {msg.content}
-              </div>
-            ))}
-            {isTyping && (
-              <div className="message received typing-indicator">
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </div>
-            )}
-            <div ref={messagesEndRef}></div>
-          </div>
-          <form className="message-form" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              className="message-input"
-              placeholder="Type your message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              required
-              onPaste={(e) => {
-                e.preventDefault();
-                alert("You can't paste here!");
-              }}
-              onCopy={(e) => e.preventDefault()}
-              onCut={(e) => e.preventDefault()}
-              onContextMenu={(e) => e.preventDefault()}
-            />
-            <button type="submit" className="send-button">
-              Send
-            </button>
-          </form>
+          <MessageList messages={messages} isTyping={isTyping} />
+          <ChatInput
+            message={message}
+            setMessage={setMessage}
+            handleSubmit={handleSubmit}
+          />
         </div>
       </div>
     </div>
