@@ -1,19 +1,14 @@
 import json
 from datetime import datetime
 from django.views import View
-from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.core.files.base import ContentFile
-from asgiref.sync import async_to_sync
-from ..models import Conversation, Bot, Avatar
-from .runchat import save_chat_to_db 
-import mimetypes
+from ..models import Bot, Avatar
 import os
 import io
 import openai
-import requests
 from PIL import Image
 import base64
 

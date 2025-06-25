@@ -61,7 +61,7 @@ function EditBots() {
   const handleAddBot = async (e) => {
     e.preventDefault();
     try {
-      if (avatar.avatar_type==="default" && !avatar.file) return alert("Please select a file first");
+      if (newBot.avatar_type==="default" && !avatar.file) return alert("Please select a file first");
 
       const response = await fetch(`${BASE_URL}/bots/`, {
         method: "POST",
@@ -115,7 +115,7 @@ function EditBots() {
   const handleUpdateBot = async (e) => {
     e.preventDefault();
     if (!editBotId) return;
-    if (editAvatar.avatar_type==="default" && !editAvatar.file) return alert("Please select a file first");
+    if (editForm.avatar_type==="default" && !editAvatar.file) return alert("Please select a file first");
     try {
       const response = await fetch(`${BASE_URL}/bots/${editBotId}/`, {
         method: "PUT",

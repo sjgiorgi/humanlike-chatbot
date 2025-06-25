@@ -31,7 +31,7 @@ urlpatterns = [
     # 8) upload voice data
     path("api/upload_voice_utterance/", upload_voice_utterance, name="upload_voice_utterance"),
 
-        # 9) Generate and Access Bot Avatar
+    # 9) Generate and Access Bot Avatar
     path("api/avatar/", AvatarAPIView.as_view(), name="avatar"),
     path('api/avatar/<str:bot_name>/', AvatarDetailAPIView.as_view(), name='avatar-detail'),
 ]
