@@ -14,7 +14,7 @@ function App() {
         <Route path="/conversation" element={<Conversation />} />
         <Route path="/voice-conversation" element={<VoiceConversation />} />
         <Route path="/edit-bots" element={<EditBots />} />
-        <Route path="/avatar" element={<Avatar />} />
+        <Route path="/avatar-upload" element={<Avatar />} />
       </Routes>
     </Router>
   );
