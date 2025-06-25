@@ -9,6 +9,12 @@ const Conversation = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [avatar, setAvatar] = useState({
+    bot_id: "",
+    bot_name: "",
+    avatar_type: "",
+    image_base64: "",
+  });
 
   const apiUrl = process.env.REACT_APP_API_URL;
   const params = new URLSearchParams(window.location.search);
@@ -41,7 +47,16 @@ const Conversation = () => {
         });
         if (!res.ok) throw new Error((await res.json()).error || "Init failed");
         const data = await res.json();
+
+        const query = new URLSearchParams({
+          conversation_id: conversationId,
+        });
+        const avatar_response = await fetch(`${apiUrl}/avatar/${botName}/?${query}`);
+        if (!avatar_response.ok) throw new Error(`Failed to get image`);
+        const avatar_data = await avatar_response.json();
+
         if (data.initial_utterance?.trim()) {
+          setAvatar(avatar_data);
           setMessages([
             { sender: "AI Chatbot", content: data.initial_utterance },
           ]);
@@ -132,7 +147,7 @@ const Conversation = () => {
     <div className="text-conversation">
       <div className="conversation-container">
         <div className="chat-box">
-          <MessageList messages={messages} isTyping={isTyping} />
+          <MessageList messages={messages} isTyping={isTyping} avatar={avatar}/>
           <ChatInput
             message={message}
             setMessage={setMessage}

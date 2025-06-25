@@ -36,6 +36,15 @@ class Bot(models.Model):
     model_type = models.CharField(max_length=255, default="OpenAI")  # Model type (e.g., OpenAI, Anthropic)
     model_id = models.CharField(max_length=255, default="gpt-4")  # Model ID, optional
     initial_utterance = models.TextField(blank=True, null=True)
+
+    # New Column:
+    AVATAR_CHOICES = [
+        ('none', 'None'),
+        ('default', 'Default'),
+        ('user', 'User Provided'),
+    ]
+    avatar_type = models.CharField(max_length=20, choices=AVATAR_CHOICES, default="none")
+
     def __str__(self):
         return self.name
 
@@ -48,3 +57,10 @@ class Keystroke(models.Model):
 
     def __str__(self):
         return f"Keystroke log for conversation {self.conversation_id} at {self.timestamp}"
+
+class Avatar(models.Model):
+    bot = models.ForeignKey(Bot, on_delete=models.CASCADE, related_name="avatars",null=True, blank=True)
+    bot_conversation = models.CharField(max_length=255, null=True, blank=True)
+    image = models.ImageField(upload_to='bot_avatars/', null=True, blank=True)
+    def __str__(self):
+        return f"Avatar for Conversation {self.bot.name} {self.bot.avatar_type} {self.image}"
