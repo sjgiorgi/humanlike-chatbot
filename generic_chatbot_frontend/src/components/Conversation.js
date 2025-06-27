@@ -51,7 +51,9 @@ const Conversation = () => {
         const query = new URLSearchParams({
           conversation_id: conversationId,
         });
-        const avatar_response = await fetch(`${apiUrl}/avatar/${botName}/?${query}`);
+        const avatar_response = await fetch(
+          `${apiUrl}/avatar/${botName}/?${query}`
+        );
         if (!avatar_response.ok) throw new Error(`Failed to get image`);
         const avatar_data = await avatar_response.json();
 
@@ -77,30 +79,36 @@ const Conversation = () => {
     surveyMetaData,
   ]);
 
+  const getHumanDelay = (text) =>
+    (2 + text.length * (Math.random() * (0.05 - 0.015) + 0.015)) * 1000;
+
   // Reveal chunks one by one
   const revealChunks = (chunks) => {
-    // throw away any totally empty strings
     const valid = chunks.filter(
-      (c) => typeof c === "string" && c.trim().length > 0
+      (c) => typeof c === "string" && c.trim().length
     );
 
-    if (valid.length === 0) {
+    if (!valid.length) {
       setIsTyping(false);
       return;
     }
 
+    let cumulative = 0;
+
     valid.forEach((chunk, i) => {
+      const delay = getHumanDelay(chunk);
+      cumulative += delay;
+
       setTimeout(() => {
         setMessages((prev) => [
           ...prev,
           { sender: "AI Chatbot", content: chunk },
         ]);
 
-        // after last one, switch off typing
         if (i === valid.length - 1) {
           setIsTyping(false);
         }
-      }, i * TYPING_INTERVAL);
+      }, cumulative);
     });
   };
 
@@ -114,7 +122,6 @@ const Conversation = () => {
 
     setMessages((prev) => [...prev, { sender: "You", content: message }]);
     setMessage("");
-    setIsTyping(true);
 
     try {
       const res = await fetch(`${apiUrl}/chatbot/`, {
@@ -135,6 +142,7 @@ const Conversation = () => {
       }
       const data = await res.json();
       const chunks = data.response_chunks || [data.response];
+      setIsTyping(true);
       revealChunks(chunks);
     } catch (err) {
       console.error("Error sending message:", err);
@@ -147,7 +155,11 @@ const Conversation = () => {
     <div className="text-conversation">
       <div className="conversation-container">
         <div className="chat-box">
-          <MessageList messages={messages} isTyping={isTyping} avatar={avatar}/>
+          <MessageList
+            messages={messages}
+            isTyping={isTyping}
+            avatar={avatar}
+          />
           <ChatInput
             message={message}
             setMessage={setMessage}

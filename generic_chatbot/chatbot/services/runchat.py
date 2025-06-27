@@ -103,12 +103,6 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
 
     response_text = response_text.strip()
 
-    # Humanlike delay logic
-    humanlike_delay = 2 + len(response_text) * random.uniform(0.015, 0.05)
-    actual_response_time = end_time - start_time
-    if actual_response_time < humanlike_delay:
-        await asyncio.sleep(humanlike_delay - actual_response_time)
-
     # Append bot response
     conversation_history.append(
         {"role": "assistant", "content": response_text})
