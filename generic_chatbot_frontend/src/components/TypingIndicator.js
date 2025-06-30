@@ -1,8 +1,8 @@
 import React from "react";
 
-const TypingIndicator = ({avatar}) => (
+const TypingIndicator = ({ avatar }) => (
   <div className="message-row received">
-    {avatar.avatar_type!=="none" && (
+    {avatar?.image_base64 && (
       <img src={avatar.image_base64} alt="Avatar" className="message-avatar" />
     )}
     <div className="message received typing-indicator">
