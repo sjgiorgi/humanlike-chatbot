@@ -47,16 +47,29 @@ const Conversation = () => {
         });
         if (!res.ok) throw new Error((await res.json()).error || "Init failed");
         const data = await res.json();
-
-        const query = new URLSearchParams({
-          conversation_id: conversationId,
-        });
-        const avatar_response = await fetch(
-          `${apiUrl}/avatar/${botName}/?${query}`
-        );
-        if (!avatar_response.ok) throw new Error(`Failed to get image`);
-        const avatar_data = await avatar_response.json();
-
+        
+        let avatar_data;
+        try {
+          const query = new URLSearchParams({
+            conversation_id: conversationId,
+          });
+          const avatar_response = await fetch(
+            `${apiUrl}/avatar/${botName}/?${query}`
+          );
+          if (!avatar_response.ok) {
+            throw new Error(`Failed to get image`);
+          }
+          avatar_data = await avatar_response.json();
+        } catch (avatarErr) {
+          console.warn("Failed to fetch avatar. Using none.");
+          avatar_data = {
+            image_base64: null, // <-- your default image path
+            bot_id: "",
+            bot_name: "",
+            avatar_type: "none",
+          };
+        }
+        
         if (data.initial_utterance?.trim()) {
           setAvatar(avatar_data);
           setMessages([
