@@ -132,6 +132,7 @@ const Conversation = () => {
       alert("Please enter a message.");
       return;
     }
+    console.log("✉️ Enqueue user message:", message);
 
     setMessages((prev) => [...prev, { sender: "You", content: message }]);
     setMessage("");

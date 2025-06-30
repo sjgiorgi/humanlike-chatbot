@@ -3,9 +3,6 @@ from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from ..models import Bot, Conversation, Utterance
 from server.engine import get_or_create_engine
-import time
-import random
-import asyncio
 from .moderation import moderate_message
 
 
@@ -91,15 +88,9 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     latest_user_message = formatted_history[-1].content
     response_text = ""
 
-    # start timer
-    start_time = time.time()
-
     async for msg in kani.full_round(query=latest_user_message):
         if hasattr(msg, "text") and isinstance(msg.text, str):
             response_text += msg.text + " "
-
-    # end timer
-    end_time = time.time()
 
     response_text = response_text.strip()
 
