@@ -12,7 +12,7 @@ const Conversation = () => {
   const [avatar, setAvatar] = useState({
     bot_id: "",
     bot_name: "",
-    avatar_type: "none",
+    avatar_type: "",
     image_base64: "",
   });
 
