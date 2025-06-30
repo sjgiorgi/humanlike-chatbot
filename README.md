@@ -1,4 +1,5 @@
 # GENERIC BOT
+
 ## Overview
 
 Generic Bot is a lightweight, modular chatbot framework designed to help researchers deploy and experiment with text-based conversational agents efficiently. Built with a Django backend, a React frontend, the [Kani](https://github.com/zhudotexe/kani) Framework for LLM integration, and a MariaDB database, it is fully containerized using Docker for seamless deployment.
@@ -14,7 +15,9 @@ The project streamlines research workflow with integration with tools like Qualt
 For detailed design specifications, see the [link](https://docs.google.com/document/d/1-cyC4nnibAFTxRk5-PV73yGv9hUJpHiCy3lXoQ9WDY0/edit?tab=t.0)
 
 ## Directory Structure
+
 ---
+
 ```
 HUMANLIKE-CHATBOT/
 ├── generic_chatbot/
@@ -46,6 +49,7 @@ HUMANLIKE-CHATBOT/
 ├── init.sql
 ├── README.md
 ```
+
 ---
 
 ## Getting Started
@@ -78,7 +82,7 @@ HUMANLIKE-CHATBOT/
     docker-compose -f docker-compose.yml up --build
     ```
 
-4. Access the Application at http://localhost:8000/
+4. Access the Application at <http://localhost:8000/>
 
     ```bash
     http://localhost:8000/
@@ -97,10 +101,12 @@ HUMANLIKE-CHATBOT/
 
 ---
 
-## Project Status 
+## Project Status
+
 Date:26/12/2024
 
 ### Current Functionality
+
 - Language model selection and bot/prompt management via config.json
 - Chat interaction logging (stored in MariaDB).
 - Dockerized for easy setup and deployment.
@@ -108,11 +114,13 @@ Date:26/12/2024
 ---
 
 ### Known Bugs
+
 - N/A
   
 ---
 
 ### V1 Next Steps
+
 1. Build and integrate the React-based frontend.
 2. Implement user ID tracking and storage (consider user-flow for chat page entry).
 3. Create a script to convert SQL conversation data to ConvoKit-formatted JSON.
@@ -122,16 +130,44 @@ Date:26/12/2024
 ---
 
 ### V2 Future Enhancements
+
 1. Add voice interaction support.
 2. Create adaptable UX/UI for various research case
 
 ---
 
 ## Challenges
+
 - **HuggingFace Support**: Compatibility issues with PyTorch libraries and GPU support in Docker need to be resolved to integrate HuggingFace models.
 
 ---
 
 ## To Be Specced & Open Questions
+
 - How can user authentication and tracking be best integrated with Qualtrics?
 - The  name of the project Humanlike chatbot does not intuitively describe what this project does do I need to keep this repository name?
+
+## Admin Interface
+
+1. **Access your Django instance**  
+
+   ```bash
+   cd /path/to/your/project
+   ```
+
+2. **Create a superuser**  
+
+   ```bash
+   python manage.py createsuperuser
+   # follow the prompts to set username, email, and password
+   ```
+
+3. **Log in to the admin panel**  
+   Open your browser and go to:  
+
+   ```
+   https://<your-domain>/api/admin/
+   ```  
+
+   (or `http://localhost:8000/api/admin/` when running locally)  
+   Enter the superuser credentials you just created.

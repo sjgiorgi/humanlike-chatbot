@@ -20,6 +20,10 @@ anthropic = "*"
 asgiref = "*"
 python-dotenv = "*"
 django-redis = "*"
+whitenoise = "*"
+nltk = "*"
+certifi = "*"
+pillow = "*"
 
 [requires]
 python_version = "3.11"

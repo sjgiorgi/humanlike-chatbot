@@ -1,9 +1,10 @@
 from django.urls import path
 from .views import ChatbotAPIView, health_check
-from .bots import ListBotsAPIView, BotDetailAPIView  # Import from bots.py
-from .conversation import InitializeConversationAPIView  # Import from conversation.py
-from .keystroke import update_keystrokes
-from .voicechat import get_realtime_session, upload_voice_utterance
+from .services.bots import ListBotsAPIView, BotDetailAPIView  # Import from bots.py
+from .services.conversation import InitializeConversationAPIView  # Import from conversation.py
+from .services.keystroke import update_keystrokes
+from .services.voicechat import get_realtime_session, upload_voice_utterance
+from .services.avatar import AvatarAPIView, AvatarDetailAPIView
 
 urlpatterns = [
     # 1) Health Check
@@ -29,4 +30,8 @@ urlpatterns = [
 
     # 8) upload voice data
     path("api/upload_voice_utterance/", upload_voice_utterance, name="upload_voice_utterance"),
+
+    # 9) Generate and Access Bot Avatar
+    path("api/avatar/", AvatarAPIView.as_view(), name="avatar"),
+    path('api/avatar/<str:bot_name>/', AvatarDetailAPIView.as_view(), name='avatar-detail'),
 ]

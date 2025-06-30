@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json, logging
-from .models import Keystroke
+from ..models import Keystroke
 from datetime import datetime
 
 # Configure logging

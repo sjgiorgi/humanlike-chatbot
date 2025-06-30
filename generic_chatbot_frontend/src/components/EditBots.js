@@ -14,7 +14,12 @@ function EditBots() {
     model_id: "",
     prompt: "",
     initial_utterance: "", // ✅ NEW
+    avatar_type: "none",   // ✅ NEW
   });
+  const [avatar, setAvatar] = useState({
+    bot_name: "",
+    file: "",
+  })
 
   const [editBotId, setEditBotId] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -23,7 +28,12 @@ function EditBots() {
     model_id: "",
     prompt: "",
     initial_utterance: "", // ✅ NEW
+    avatar_type: "none",   // ✅ NEW
   });
+  const [editAvatar, setEditAvatar] = useState({
+    bot_name: "",
+    file: "",
+  })
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -51,19 +61,36 @@ function EditBots() {
   const handleAddBot = async (e) => {
     e.preventDefault();
     try {
+      if (newBot.avatar_type==="default" && !avatar.file) return alert("Please select a file first");
+
       const response = await fetch(`${BASE_URL}/bots/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newBot),
       });
       if (!response.ok) throw new Error(`Failed to create new bot`);
+
+      const formData = new FormData();
+      formData.append('bot_name', newBot.name);
+      formData.append('image', avatar.file);
+
+      fetch(`${BASE_URL}/avatar/`, {
+        method: 'POST',
+        body: formData,
+      });
+
       setNewBot({
         name: "",
         model_type: "",
         model_id: "",
         prompt: "",
         initial_utterance: "",
+        avatar_type: "none",
       });
+      setAvatar({
+        bot_name: "",
+        file: "",
+      })
       fetchBots();
     } catch (error) {
       alert(`Error adding bot: ${error.message}`);
@@ -78,12 +105,17 @@ function EditBots() {
       model_id: bot.model_id,
       prompt: bot.prompt,
       initial_utterance: bot.initial_utterance || "", // ✅ NEW
+      avatar_type: bot.avatar_type || "none",         // ✅ NEW
+    });
+    setEditAvatar({
+      bot_name: bot.name,
     });
   };
 
   const handleUpdateBot = async (e) => {
     e.preventDefault();
     if (!editBotId) return;
+    if (editForm.avatar_type==="default" && !editAvatar.file) return alert("Please select a file first");
     try {
       const response = await fetch(`${BASE_URL}/bots/${editBotId}/`, {
         method: "PUT",
@@ -91,6 +123,16 @@ function EditBots() {
         body: JSON.stringify(editForm),
       });
       if (!response.ok) throw new Error(`Failed to update bot`);
+
+      const formData = new FormData();
+      formData.append('bot_name', editForm.name);
+      formData.append('image', editAvatar.file);
+
+      fetch(`${BASE_URL}/avatar/${String(editBotId)}/`, {
+        method: 'POST',
+        body: formData,
+      });
+
       setEditBotId(null);
       setEditForm({
         name: "",
@@ -98,6 +140,11 @@ function EditBots() {
         model_id: "",
         prompt: "",
         initial_utterance: "",
+        avatar_type: "",
+      });
+      setEditAvatar({
+        bot_name: "",
+        file: "",
       });
       fetchBots();
     } catch (error) {
@@ -190,6 +237,27 @@ function EditBots() {
             }
           />
         </div>
+        <div>
+            <label>Avatar Type: </label>
+            <select
+              value={newBot.avatar_type}
+              onChange={(e) => setNewBot({ ...newBot, avatar_type: e.target.value })}
+            >
+              <option value="none">None</option>
+              <option value="default">Default</option>
+              <option value="user">User Provided</option>
+            </select>
+        </div>
+        <div>
+            {
+            newBot.avatar_type==="default" ?
+              <>
+                <label>Image:</label>
+                <input type="file" accept="image/*" onChange={(e) => setAvatar({ ...avatar, file:e.target.files[0] })} />
+              </> :
+              <></>
+            }
+        </div>
         <button type="submit">Add Bot</button>
       </form>
 
@@ -209,6 +277,7 @@ function EditBots() {
                 <th>Model ID</th>
                 <th>Prompt</th>
                 <th>Initial Utterance</th>
+                <th>Avatar Type</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -220,6 +289,7 @@ function EditBots() {
                   <td>{bot.model_id}</td>
                   <td>{bot.prompt}</td>
                   <td>{bot.initial_utterance}</td>
+                  <td>{bot.avatar_type}</td>
                   <td>
                     <button onClick={() => handleEditClick(bot)}>Edit</button>
                     <button onClick={() => handleDeleteBot(bot.id)}>
@@ -293,6 +363,27 @@ function EditBots() {
                   })
                 }
               />
+            </div>
+            <div>
+              <label>Avatar Type: </label>
+              <select
+                value={editForm.avatar_type}
+                onChange={(e) => setEditForm({ ...editForm, avatar_type: e.target.value })}
+              >
+                <option value="none">None</option>
+                <option value="default">Default</option>
+                <option value="user">User Provided</option>
+              </select>
+            </div>
+            <div>
+                {
+                editForm.avatar_type==="default" ?
+                  <>
+                    <label>Image:</label>
+                    <input type="file" accept="image/*" onChange={(e) => setEditAvatar({ ...editAvatar, file:e.target.files[0] })} />
+                  </> :
+                  <></>
+                }
             </div>
             <button type="submit">Update Bot</button>
           </form>

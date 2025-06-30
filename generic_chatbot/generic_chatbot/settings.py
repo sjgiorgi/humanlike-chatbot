@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -73,23 +74,22 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    # "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://backend:8000",
-]
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
-    "http://backend:3000",
+    "https://dev.bot.wwbp.org",
+    "https://bot.wwbp.org",
 ]
 
 ROOT_URLCONF = "generic_chatbot.urls"
@@ -98,6 +98,24 @@ ROOT_URLCONF = "generic_chatbot.urls"
 ASGI_APPLICATION = "generic_chatbot.asgi.application"
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+MODERATION_VALUES_FOR_BLOCKED = json.loads(
+    os.environ.get(
+        "MODERATION_VALUES_FOR_BLOCKED",
+        """{
+            "harassment": 0.5,
+            "harassment/threatening": 0.1,
+            "hate": 0.5,
+            "hate/threatening": 0.1,
+            "self-harm": 0.2,
+            "self-harm/instructions": 0.5,
+            "self-harm/intent": 0.7,
+            "sexual": 0.5,
+            "sexual/minors": 0.2,
+            "violence": 0.7,
+            "violence/graphic": 0.8
+        }""",
+    )
+)
 
 TEMPLATES = [
     {
@@ -167,7 +185,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

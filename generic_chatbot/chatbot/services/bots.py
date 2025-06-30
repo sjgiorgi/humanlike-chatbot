@@ -3,7 +3,7 @@ from django.views import View
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from .models import Bot
+from ..models import Bot
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ListBotsAPIView(View):
@@ -14,7 +14,7 @@ class ListBotsAPIView(View):
 
     def get(self, request, *args, **kwargs):
         try:
-            bots = Bot.objects.values("id", "name", "model_type", "model_id", "prompt", "initial_utterance")
+            bots = Bot.objects.values("id", "name", "model_type", "model_id", "prompt", "initial_utterance", "avatar_type")
             return JsonResponse({"bots": list(bots)}, status=200)
         except Exception as e:
             print(f"Error in ListBotsAPIView GET: {e}")
@@ -28,6 +28,7 @@ class ListBotsAPIView(View):
             model_id = data.get("model_id")
             prompt = data.get("prompt", "")
             initial_utterance = data.get("initial_utterance", "")
+            avatar_type = data.get("avatar_type", "none")
 
             if not name or not model_type or not model_id:
                 return JsonResponse({"error": "Missing required fields."}, status=400)
@@ -37,7 +38,8 @@ class ListBotsAPIView(View):
                 model_type=model_type,
                 model_id=model_id,
                 prompt=prompt,
-                initial_utterance=initial_utterance
+                initial_utterance=initial_utterance,
+                avatar_type=avatar_type
             )
 
             return JsonResponse(
@@ -48,6 +50,7 @@ class ListBotsAPIView(View):
                     "model_id": bot.model_id,
                     "prompt": bot.prompt,
                     "initial_utterance": bot.initial_utterance,
+                    "avatar_type": bot.avatar_type,
                 },
                 status=201
             )
@@ -76,6 +79,7 @@ class BotDetailAPIView(View):
                 "model_id": bot.model_id,
                 "prompt": bot.prompt,
                 "initial_utterance": bot.initial_utterance,
+                "avatar_type": bot.avatar_type,
             }
             return JsonResponse(data, status=200)
         except Bot.DoesNotExist:
@@ -97,6 +101,7 @@ class BotDetailAPIView(View):
             bot.model_id = data.get("model_id", bot.model_id)
             bot.prompt = data.get("prompt", bot.prompt)
             bot.initial_utterance = data.get("initial_utterance", bot.initial_utterance)
+            bot.avatar_type = data.get("avatar_type", bot.avatar_type)
             bot.save()
 
             return JsonResponse({"message": "Bot updated successfully."}, status=200)
