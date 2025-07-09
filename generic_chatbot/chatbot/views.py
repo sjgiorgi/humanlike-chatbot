@@ -19,8 +19,10 @@ from server.engine import get_or_create_engine
 # Dictionary to store per-engine configurations
 engine_instances = {}
 
+
 def health_check(request):
     return JsonResponse({"status": "ok"})
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ChatbotAPIView(View):
@@ -41,7 +43,7 @@ class ChatbotAPIView(View):
                 participant_id=participant_id,
                 message=message
             )
-            ctrl = Control.objects.first()
+            ctrl = await sync_to_async(Control.objects.first)()
             use_chunks = ctrl.chunk_messages if ctrl else True
 
             # split or not
