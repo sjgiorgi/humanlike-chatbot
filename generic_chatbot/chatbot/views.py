@@ -8,7 +8,7 @@ from asgiref.sync import sync_to_async
 from datetime import datetime
 from django.core.cache import cache
 from kani import Kani, ChatMessage, ChatRole
-from .models import Conversation, Bot, Utterance
+from .models import Control, Conversation, Bot, Utterance
 from .services.voicechat import get_realtime_session, upload_voice_utterance
 from .services.bots import ListBotsAPIView, BotDetailAPIView
 from .services.conversation import InitializeConversationAPIView
@@ -19,8 +19,10 @@ from server.engine import get_or_create_engine
 # Dictionary to store per-engine configurations
 engine_instances = {}
 
+
 def health_check(request):
     return JsonResponse({"status": "ok"})
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ChatbotAPIView(View):
@@ -41,8 +43,14 @@ class ChatbotAPIView(View):
                 participant_id=participant_id,
                 message=message
             )
-            
-            response_chunks = human_like_chunks(response_text)
+            ctrl = await sync_to_async(Control.objects.first)()
+            use_chunks = ctrl.chunk_messages if ctrl else True
+
+            # split or not
+            if use_chunks:
+                response_chunks = human_like_chunks(response_text)
+            else:
+                response_chunks = [response_text]
 
             return JsonResponse({
                 'message': message,
