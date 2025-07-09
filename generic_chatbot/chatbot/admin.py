@@ -1,5 +1,19 @@
 from django.contrib import admin
-from .models import Conversation, Utterance, Bot, Keystroke
+from .models import Conversation, Utterance, Bot, Keystroke, Control
+
+
+@admin.site.register(Control)
+class ControlAdmin(admin.ModelAdmin):
+    list_display = ("chunk_messages",)
+    actions = None
+
+    def has_add_permission(self, request):
+        # only allow creating the very first row
+        return not Control.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        # prevent deletion
+        return False
 
 
 @admin.register(Conversation)
