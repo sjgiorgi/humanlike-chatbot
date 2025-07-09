@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import Conversation, Utterance, Bot, Keystroke, Control
 
 
-@admin.site.register(Control)
+@admin.register(Control)
 class ControlAdmin(admin.ModelAdmin):
     list_display = ("chunk_messages",)
     actions = None
