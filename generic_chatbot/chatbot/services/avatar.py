@@ -11,7 +11,7 @@ import io
 import openai
 from PIL import Image
 import base64
-from .s3_helper import download, upload, delete
+from .s3_helper import download, upload, delete, get_presigned_url
 
 def make_square(image, fill_color=(255, 255, 255, 0)):
         """
@@ -75,6 +75,7 @@ class AvatarAPIView(View):
 
             if bot.avatar_type == "default":
                 image, image_key = generate_avatar(
+                    # request.FILES.get("image"),
                     download('uploads', image_url),
                     bot_name,
                     bot.avatar_type
@@ -126,17 +127,9 @@ class AvatarDetailAPIView(View):
                 avatar = Avatar.objects.get(bot=bot, bot_conversation=None)
 
             if avatar.image_path:
-                image = download('avatar', avatar.image_path)
-                buffered = io.BytesIO()
-                image.save(buffered, format="PNG")  # or "JPEG", depending on your image type
-                img_bytes = buffered.getvalue()
-
-                # Convert to base64
-                img_base64 = base64.b64encode(img_bytes).decode("utf-8")
-                data["image_base64"] = f"data:image/png;base64,{img_base64}"
-
+                data['image_url'] = get_presigned_url('avatar', avatar.image_path)
             else:
-                data["image_base64"] = None
+                data['image_url'] = None
             return JsonResponse(data, status=200)
         except Bot.DoesNotExist:
             return JsonResponse({"error": "Bot not found"}, status=404)
@@ -174,5 +167,18 @@ class AvatarDetailAPIView(View):
             return JsonResponse({"message": "Avatar updated successfully."}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON payload."}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    def delete(self, request, bot_name, *args, **kwargs):
+        try:
+            avatars = Avatar.objects.filter(bot=Bot.objects.filter(pk=int(bot_name)))
+            for avatar in avatars:
+                if avatar.image_path:
+                    delete('avatar', avatar.image_path)
+            avatars.delete()
+            return JsonResponse({"message": "Bot deleted successfully."}, status=204)
+        except Bot.DoesNotExist:
+            return JsonResponse({"error": "Bot not found"}, status=404)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)

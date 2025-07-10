@@ -23,7 +23,6 @@ def download(prefix, file_path):
         print({"error": str(e)})
     return None
 
-# Initialize boto3 client
 def upload(data, file_path):
     try:
         s3.upload_fileobj(
@@ -41,10 +40,24 @@ def upload(data, file_path):
         print(f'[ERROR] {e}')
         return None
 
-# Initialize boto3 client
 def delete(prefix, file_path):
     try:
         s3.delete_object(Bucket=os.getenv("AWS_BUCKET_NAME"), Key=f'{prefix}/{file_path}')
     except Exception as e:
         print(f'[ERROR] {e}')
+        return None
+
+def get_presigned_url(prefix, file_path, expiration=1000):
+    try:
+        url = s3.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': os.getenv("AWS_BUCKET_NAME"),
+                'Key': f'{prefix}/{file_path}'
+            },
+            ExpiresIn=expiration  # seconds
+        )
+        return url
+    except Exception as e:
+        print("Error generating pre-signed URL:", e)
         return None
