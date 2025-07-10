@@ -38,4 +38,4 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 # Command to run the application
 CMD ["gunicorn", "generic_chatbot.wsgi:application", \
      "--bind", "0.0.0.0:8000", \
-     "--workers", "5"]
+     "--workers", "5", "--timeout", "180"]
