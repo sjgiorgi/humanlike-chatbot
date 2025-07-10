@@ -115,11 +115,14 @@ class BotDetailAPIView(View):
     def delete(self, request, pk, *args, **kwargs):
         try:
             bot = Bot.objects.get(pk=pk)
-            avatars = Avatar.objects.filter(bot=bot)
-            for avatar in avatars:
-                if avatar.image_path:
-                    delete('avatar', avatar.image_path)
-            avatars.delete()
+            try:
+                avatars = Avatar.objects.filter(bot=bot)
+                for avatar in avatars:
+                    if avatar.image_path:
+                        delete('avatar', avatar.image_path)
+                avatars.delete()
+            except:
+                print(f'[ERROR] failed to delete S3 images')
             bot.delete()
             return JsonResponse({"message": "Bot deleted successfully."}, status=204)
         except Bot.DoesNotExist:
