@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f8e6e6d3b6fc2fbf74d7c242a691e04aef55ae142ec3c739f76de8481d63ead6"
+            "sha256": "a4818f703a556292c1db17e891fcb1edcd481d4e0d96429ce58990810bc36f68"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -151,6 +151,23 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==6.2.0"
+        },
+        "boto3": {
+            "hashes": [
+                "sha256:056cfa2440fe1a157a7c2be897c749c83e1a322144aa4dad889f2fca66571019",
+                "sha256:0a367106497649ae3d8a7b571b8c3be01b7b935a0fe303d4cc2574ed03aecbb4"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.9'",
+            "version": "==1.39.3"
+        },
+        "botocore": {
+            "hashes": [
+                "sha256:66a81cfac18ad5e9f47696c73fdf44cdbd8f8ca51ab3fca1effca0aabf61f02f",
+                "sha256:da8f477e119f9f8a3aaa8b3c99d9c6856ed0a243680aa3a3fbbfc15a8d4093fb"
+            ],
+            "markers": "python_version >= '3.9'",
+            "version": "==1.39.3"
         },
         "certifi": {
             "hashes": [
@@ -649,6 +666,14 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==0.10.0"
+        },
+        "jmespath": {
+            "hashes": [
+                "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980",
+                "sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==1.0.1"
         },
         "joblib": {
             "hashes": [
@@ -1725,6 +1750,14 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==0.25.1"
+        },
+        "s3transfer": {
+            "hashes": [
+                "sha256:0148ef34d6dd964d0d8cf4311b2b21c474693e57c2e069ec708ce043d2b527be",
+                "sha256:f5e6db74eb7776a37208001113ea7aa97695368242b364d73e91c981ac522177"
+            ],
+            "markers": "python_version >= '3.9'",
+            "version": "==0.13.0"
         },
         "send2trash": {
             "hashes": [

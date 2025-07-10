@@ -3,7 +3,8 @@ from django.views import View
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from ..models import Bot
+from ..models import Bot, Avatar
+from .s3_helper import delete
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ListBotsAPIView(View):
@@ -114,6 +115,11 @@ class BotDetailAPIView(View):
     def delete(self, request, pk, *args, **kwargs):
         try:
             bot = Bot.objects.get(pk=pk)
+            avatars = Avatar.objects.filter(bot=bot)
+            for avatar in avatars:
+                if avatar.image_path:
+                    delete('avatar', avatar.image_path)
+            avatars.delete()
             bot.delete()
             return JsonResponse({"message": "Bot deleted successfully."}, status=204)
         except Bot.DoesNotExist:

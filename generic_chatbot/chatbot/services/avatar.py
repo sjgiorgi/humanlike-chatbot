@@ -11,6 +11,7 @@ import io
 import openai
 from PIL import Image
 import base64
+from .s3_helper import download, upload, delete
 
 def make_square(image, fill_color=(255, 255, 255, 0)):
         """
@@ -24,28 +25,35 @@ def make_square(image, fill_color=(255, 255, 255, 0)):
         return new_image.resize((512, 512))
 
 def generate_avatar(file, bot_name, avatar_type, conversation_id=None):
-    image_vector = Image.open(file)
-    square_image = make_square(image_vector)
+    # image_vector = Image.open(file)
+    try:
+        image_vector = file
+        square_image = make_square(image_vector)
 
-    image_bytes_io = io.BytesIO()
-    square_image.save(image_bytes_io, format='PNG')
-    image_bytes_io.seek(0) 
+        image_bytes_io = io.BytesIO()
+        square_image.save(image_bytes_io, format='PNG')
+        image_bytes_io.seek(0) 
 
-    image_file = ("image.png", image_bytes_io, "image/png")
+        image_file = ("image.png", image_bytes_io, "image/png")
 
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    client = openai.OpenAI()
-    response = client.images.edit(
-        model="gpt-image-1",
-        image=[image_file],
-        prompt="Create a fun and friendly bitmoji-style avatar based on this person's image. Capture the main facial features like hair style, eye shape, and skin tone, but simplify and stylize them with smooth lines and bright colors. The avatar should look cartoonish, approachable, and suitable as a profile picture. The output image's size should be square",
-    )
-    image_base64 = response.data[0].b64_json
-    image_bytes = base64.b64decode(image_base64)
-    image = ContentFile(image_bytes)
-    # Timestamp to help make image name unique, avoids overwriting images
-    image.name = f"{bot_name}_{avatar_type}_{conversation_id if conversation_id else ''}_{str(int(datetime.now().timestamp()))}_avatar.png"
-    return image
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        client = openai.OpenAI()
+        response = client.images.edit(
+            model="gpt-image-1",
+            image=[image_file],
+            prompt="Create a fun and friendly bitmoji-style avatar based on this person's image. Capture the main facial features like hair style, eye shape, and skin tone, but simplify and stylize them with smooth lines and bright colors. The avatar should look cartoonish, approachable, and suitable as a profile picture. The output image's size should be square",
+        )
+        image_base64 = response.data[0].b64_json
+        image_bytes = base64.b64decode(image_base64)
+        image = ContentFile(image_bytes)
+        # Timestamp to help make image name unique, avoids overwriting images
+        return (
+            image,
+            f"{bot_name}_{avatar_type}_{conversation_id if conversation_id else ''}_{str(int(datetime.now().timestamp()))}.png"
+        )
+    except Exception as e:
+        print(f'[ERROR] {e}')
+        return None
 
 @method_decorator(csrf_exempt, name='dispatch')
 class AvatarAPIView(View):
@@ -58,28 +66,35 @@ class AvatarAPIView(View):
 
     def post(self, request, *args, **kwargs):
         try:
-            bot_name = request.POST.get("bot_name")
+            data = json.loads(request.body)
+            bot_name = data.get("bot_name")
             bot = Bot.objects.get(name=bot_name)
-            conversation_id = request.POST.get("conversation_id")
-            image = None
+            conversation_id = data.get("conversation_id")
+            image_url = data.get("image_path")
+            image_key = None
 
             if bot.avatar_type == "default":
-                image = generate_avatar(
-                    request.FILES.get("image"),
+                image, image_key = generate_avatar(
+                    download('uploads', image_url),
                     bot_name,
                     bot.avatar_type
                 )
+                upload(image, image_key)
+                delete('uploads', image_url)
             if bot.avatar_type == "user" and conversation_id:
-                image = generate_avatar(
-                    request.FILES.get("image"),
+                image, image_key = generate_avatar(
+                    download('uploads', image_url),
                     bot_name,
                     bot.avatar_type,
                     conversation_id
                 )
+                upload(image, image_key)
+                delete('uploads', image_url)
+
             avatar = Avatar.objects.create(
                 bot=bot,
                 bot_conversation=conversation_id,
-                image=image
+                image_path=image_key
             )
 
             return JsonResponse(
@@ -87,7 +102,8 @@ class AvatarAPIView(View):
                 status=201
             )
         except Exception as e:
-             return JsonResponse(
+            print(f'[ERROR] {e}') 
+            return JsonResponse(
                 {'message': "FAILED!"},
                 status=500
             )
@@ -109,15 +125,23 @@ class AvatarDetailAPIView(View):
             else:
                 avatar = Avatar.objects.get(bot=bot, bot_conversation=None)
 
-            if avatar.image:
-                with open(avatar.image.path, "rb") as f:
-                    encoded_string = base64.b64encode(f.read()).decode()
-                    data["image_base64"] = f"data:image/png;base64,{encoded_string}"
+            if avatar.image_path:
+                image = download('avatar', avatar.image_path)
+                buffered = io.BytesIO()
+                image.save(buffered, format="PNG")  # or "JPEG", depending on your image type
+                img_bytes = buffered.getvalue()
+
+                # Convert to base64
+                img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+                data["image_base64"] = f"data:image/png;base64,{img_base64}"
+
             else:
                 data["image_base64"] = None
             return JsonResponse(data, status=200)
         except Bot.DoesNotExist:
             return JsonResponse({"error": "Bot not found"}, status=404)
+        except Exception as e:
+            print(f'[ERROR] {e}')
 
     def post(self, request, bot_name, *args, **kwargs):
         try:
@@ -127,38 +151,28 @@ class AvatarDetailAPIView(View):
             return JsonResponse({"error": "Bot not found"}, status=404)
 
         try:
-            edit_image = None
+            image_key = None
 
-            if avatar.image:
-                avatar.image.delete(save=False)
+            if avatar.image_path:
+                delete('avatar', avatar.image_path)
 
             if bot.avatar_type == "default":
-                edit_image = generate_avatar(
-                    request.FILES.get("image"),
+                data = json.loads(request.body)
+                image_url = data.get("image_path")
+                edit_image, image_key = generate_avatar(
+                    download('uploads', image_url),
                     bot.name,
                     bot.avatar_type
                 )
+                upload(edit_image, image_key)
+                delete('uploads', image_url)
 
             avatar.bot = bot
-            avatar.image = edit_image
+            avatar.image_path = image_key
             avatar.save()
 
             return JsonResponse({"message": "Avatar updated successfully."}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON payload."}, status=400)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-
-    def delete(self, request, bot_name, *args, **kwargs):
-        try:
-            # bot = Bot.objects.get(name=bot_name)
-            avatars = Avatar.objects.filter(bot=Bot.objects.filter(name=bot_name))
-            for avatar in avatars:
-                if avatar.image and os.path.isfile(avatar.image):
-                    os.remove(avatar.image)
-            avatars.delete()
-            return JsonResponse({"message": "Bot deleted successfully."}, status=204)
-        except Bot.DoesNotExist:
-            return JsonResponse({"error": "Bot not found"}, status=404)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)

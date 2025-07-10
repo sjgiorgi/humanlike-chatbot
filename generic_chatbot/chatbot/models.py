@@ -82,10 +82,9 @@ class Avatar(models.Model):
     bot = models.ForeignKey(Bot, on_delete=models.CASCADE,
                             related_name="avatars", null=True, blank=True)
     bot_conversation = models.CharField(max_length=255, null=True, blank=True)
-    image = models.ImageField(upload_to='bot_avatars/', null=True, blank=True)
-
+    image_path = models.TextField(null=True, blank=True)
     def __str__(self):
-        return f"Avatar for Conversation {self.bot.name} {self.bot.avatar_type} {self.image}"
+        return f"Avatar for Conversation {self.bot.name} {self.bot.avatar_type} {self.image_path}"
 
 
 class Control(models.Model):

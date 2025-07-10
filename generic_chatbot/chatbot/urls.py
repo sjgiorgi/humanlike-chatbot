@@ -5,6 +5,7 @@ from .services.conversation import InitializeConversationAPIView  # Import from 
 from .services.keystroke import update_keystrokes
 from .services.voicechat import get_realtime_session, upload_voice_utterance
 from .services.avatar import AvatarAPIView, AvatarDetailAPIView
+from .services.upload import get_presigned_url
 
 urlpatterns = [
     # 1) Health Check
@@ -34,4 +35,5 @@ urlpatterns = [
     # 9) Generate and Access Bot Avatar
     path("api/avatar/", AvatarAPIView.as_view(), name="avatar"),
     path('api/avatar/<str:bot_name>/', AvatarDetailAPIView.as_view(), name='avatar-detail'),
+    path('api/avatar-upload/', get_presigned_url, name='avatar-upload'),
 ]
