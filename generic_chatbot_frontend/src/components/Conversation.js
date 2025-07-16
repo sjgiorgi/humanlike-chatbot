@@ -24,6 +24,7 @@ const Conversation = () => {
   const surveyId = params.get("survey_id") || "";
   const studyName = params.get("study_name") || "";
   const userGroup = params.get("user_group") || "";
+  const condition = params.get("condition") || "";
   const surveyMetaData = window.location.href;
 
   // Initialize conversation on mount
@@ -52,6 +53,7 @@ const Conversation = () => {
         try {
           const query = new URLSearchParams({
             conversation_id: conversationId,
+            condition: condition
           });
           const avatar_response = await fetch(
             `${apiUrl}/avatar/${botName}/?${query}`
@@ -63,7 +65,7 @@ const Conversation = () => {
         } catch (avatarErr) {
           console.warn("Failed to fetch avatar. Using none.");
           avatar_data = {
-            image_base64: null, // <-- your default image path
+            image_url: null, // <-- your default image path
             bot_id: "",
             bot_name: "",
             avatar_type: "none",
