@@ -67,7 +67,7 @@ def get_random_image(prefix, file_path, expiration=3600):
     try:
         response = s3.list_objects_v2(Bucket=os.getenv("AWS_BUCKET_NAME"), Prefix=prefix)
         if 'Contents' in response:
-            file_keys = [item['Key'] for item in response['Contents'] if item['Key'] != file_path]
+            file_keys = [item['Key'].removeprefix(f"{prefix}/") for item in response['Contents'] if item['Key'].removeprefix(f"{prefix}/") != file_path]
             return random.choice(file_keys)
         else:
             return None
