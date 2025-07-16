@@ -79,12 +79,22 @@ class Keystroke(models.Model):
 
 
 class Avatar(models.Model):
+     # New Column:
+    CONDITION_CHOICES = [
+        ("control", "control"),
+        ("similar", "similar"),
+        ("dissimilar", "dissimilar"),
+    ]
     bot = models.ForeignKey(Bot, on_delete=models.CASCADE,
                             related_name="avatars", null=True, blank=True)
     bot_conversation = models.CharField(max_length=255, null=True, blank=True)
-    image_path = models.TextField(null=True, blank=True)
+    condition = models.CharField(
+        max_length=20, choices=CONDITION_CHOICES, default="similar")
+    participant_avatar = models.TextField(null=True, blank=True)
+    chatbot_avatar = models.TextField(null=True, blank=True)
+
     def __str__(self):
-        return f"Avatar for Conversation {self.bot.name} {self.bot.avatar_type} {self.image_path}"
+        return f"Avatar for Conversation {self.bot.name} {self.bot.avatar_type} {self.condition} {self.participant_avatar} {self.chatbot_avatar}"
 
 
 class Control(models.Model):
