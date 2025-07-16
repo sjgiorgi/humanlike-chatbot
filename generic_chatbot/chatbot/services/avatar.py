@@ -145,7 +145,8 @@ class AvatarDetailAPIView(View):
                     avatar.chatbot_avatar = os.getenv("CHATBOT_CONTROL_IMAGE")
                 elif condition == "dissimilar":
                     avatar.condition = "dissimilar"
-                    avatar.chatbot_avatar = get_random_image("avatar", avatar.participant_avatar)
+                    if not avatar.chatbot_avatar:
+                        avatar.chatbot_avatar = get_random_image("avatar", avatar.participant_avatar)
                 else:
                     avatar.chatbot_avatar = avatar.participant_avatar
                 avatar.save()
