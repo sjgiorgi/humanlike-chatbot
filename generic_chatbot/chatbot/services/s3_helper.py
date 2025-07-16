@@ -2,6 +2,7 @@ import os
 import io
 from PIL import Image
 import boto3
+import random
 
 s3 = boto3.client(
         's3',
@@ -47,7 +48,7 @@ def delete(prefix, file_path):
         print(f'[ERROR] {e}')
         return None
 
-def get_presigned_url(prefix, file_path, expiration=1000):
+def get_presigned_url(prefix, file_path, expiration=3600):
     try:
         url = s3.generate_presigned_url(
             'get_object',
@@ -58,6 +59,18 @@ def get_presigned_url(prefix, file_path, expiration=1000):
             ExpiresIn=expiration  # seconds
         )
         return url
+    except Exception as e:
+        print("Error generating pre-signed URL:", e)
+        return None
+
+def get_random_image(prefix, file_path, expiration=3600):
+    try:
+        response = s3.list_objects_v2(Bucket=os.getenv("AWS_BUCKET_NAME"), Prefix=prefix)
+        if 'Contents' in response:
+            file_keys = [item['Key'] for item in response['Contents'] if item['Key'] != file_path]
+            return random.choice(file_keys)
+        else:
+            return None
     except Exception as e:
         print("Error generating pre-signed URL:", e)
         return None

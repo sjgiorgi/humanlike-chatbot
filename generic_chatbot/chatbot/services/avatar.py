@@ -11,7 +11,10 @@ import io
 import openai
 from PIL import Image
 import base64
-from .s3_helper import download, upload, delete, get_presigned_url
+from .s3_helper import download, upload, delete, get_presigned_url, get_random_image
+
+import logging
+logger = logging.getLogger(__name__)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -85,6 +88,11 @@ class AvatarAPIView(View):
                 )
                 upload(image, image_key)
                 delete('uploads', image_url)
+                Avatar.objects.create(
+                    bot=bot,
+                    bot_conversation=conversation_id,
+                    chatbot_avatar=image_key
+                )
             if bot.avatar_type == "user" and conversation_id:
                 image, image_key = generate_avatar(
                     download('uploads', image_url),
@@ -94,14 +102,13 @@ class AvatarAPIView(View):
                 )
                 upload(image, image_key)
                 delete('uploads', image_url)
+                Avatar.objects.create(
+                    bot=bot,
+                    bot_conversation=conversation_id,
+                    participant_avatar=image_key
+                )
 
             logger.debug(f'[DEBUG] {bot.name}, {conversation_id}, {image_key}')
-            avatar = Avatar.objects.create(
-                bot=bot,
-                bot_conversation=conversation_id,
-                image_path=image_key
-            )
-
             return JsonResponse(
                 {"message": "SUCCESS!"},
                 status=201
@@ -123,22 +130,39 @@ class AvatarDetailAPIView(View):
                     "bot_name": bot.name,
                     "avatar_type": bot.avatar_type,
                 }
-            
+
             if bot.avatar_type=="user":
                 conversation_id = request.GET.get("conversation_id")
+                condition = request.GET.get("condition") # Default: None
+                source = request.GET.get("source")       # Default: None
                 avatar = Avatar.objects.get(bot=bot, bot_conversation=conversation_id)
+                
+                if source == "qualtrics" and avatar is not None:
+                    return JsonResponse({"status":True}, status=200)
+
+                if condition == "control":
+                    avatar.condition = "control"
+                    avatar.chatbot_avatar = os.getenv("CHATBOT_CONTROL_IMAGE")
+                elif condition == "dissimilar":
+                    avatar.condition = "dissimilar"
+                    avatar.chatbot_avatar = get_random_image("avatar", avatar.participant_avatar)
+                else:
+                    avatar.chatbot_avatar = avatar.participant_avatar
+                avatar.save()
             else:
                 avatar = Avatar.objects.get(bot=bot, bot_conversation=None)
 
-            if avatar.image_path:
-                data['image_url'] = get_presigned_url('avatar', avatar.image_path)
+            if avatar.chatbot_avatar:
+                data['image_url'] = get_presigned_url('avatar', avatar.chatbot_avatar)
             else:
                 data['image_url'] = None
             return JsonResponse(data, status=200)
         except Bot.DoesNotExist:
+            logger.exception(f'[ERROR] {e}')
             return JsonResponse({"error": "Bot not found"}, status=404)
         except Exception as e:
             logger.exception(f'[ERROR] {e}')
+            return JsonResponse({"error": "Bot not found"}, status=404)
 
     def post(self, request, bot_name, *args, **kwargs):
         try:
@@ -150,8 +174,8 @@ class AvatarDetailAPIView(View):
         try:
             image_key = None
 
-            if avatar.image_path:
-                delete('avatar', avatar.image_path)
+            if avatar.chatbot_avatar:
+                delete('avatar', avatar.chatbot_avatar)
 
             if bot.avatar_type == "default":
                 data = json.loads(request.body)
@@ -165,7 +189,7 @@ class AvatarDetailAPIView(View):
                 delete('uploads', image_url)
 
             avatar.bot = bot
-            avatar.image_path = image_key
+            avatar.chatbot_avatar = image_key
             avatar.save()
 
             return JsonResponse({"message": "Avatar updated successfully."}, status=200)
