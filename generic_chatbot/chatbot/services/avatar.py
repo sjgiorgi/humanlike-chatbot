@@ -47,7 +47,7 @@ def generate_avatar(file, bot_name, avatar_type, conversation_id=None):
         response = client.images.edit(
             model="gpt-image-1",
             image=[image_file],
-            prompt="Create a fun and friendly bitmoji-style avatar based on this person's image. Capture the main facial features like hair style, eye shape, and skin tone, but simplify and stylize them with smooth lines and bright colors. The avatar should look cartoonish, approachable, and suitable as a profile picture. The output image's size should be square",
+            prompt=os.getenv("CHATBOT_AVATAR_PROMPT"),
         )
         image_base64 = response.data[0].b64_json
         image_bytes = base64.b64decode(image_base64)
