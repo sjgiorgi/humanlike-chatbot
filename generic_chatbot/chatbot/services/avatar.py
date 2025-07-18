@@ -111,7 +111,7 @@ class AvatarAPIView(View):
             logger.debug(f'[DEBUG] {bot.name}, {conversation_id}, {image_key}')
             return JsonResponse(
                 {"message": "SUCCESS!"},
-                status=201
+                status=200
             )
         except Exception as e:
             logger.exception(f'[ERROR] {e}') 
