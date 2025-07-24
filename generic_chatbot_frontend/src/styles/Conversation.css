@@ -139,7 +139,7 @@
 }
 
 /* Mobile-specific adjustments */
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 1000px) {
   .text-conversation .conversation-container{
       width: 90vw;
   }
