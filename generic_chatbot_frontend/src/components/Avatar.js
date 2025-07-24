@@ -9,9 +9,15 @@ function Avatar() {
   const navigate = useNavigate();
 
   const BASE_URL = process.env.REACT_APP_API_URL;
+  const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+
 
   const handleUpload = async () => {
     if (!file) return alert("Please select a file first");
+    
+    if (!allowedTypes.includes(file.type)) {
+      return alert("Please upload image in PNG or JPEG/JPG format");
+    }
 
     setIsUploading(true);
     setUploadSuccess(false);
@@ -24,6 +30,8 @@ function Avatar() {
 
     try {
       // 1. Get presigned URL
+      console.log(file.type)
+
       const res = await fetch(
         `${BASE_URL}/avatar-upload/?filename=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(file.type)}`
       );
@@ -51,6 +59,7 @@ function Avatar() {
           image_path: file.name,
         }),
       });
+      console.log(imageUpload)
 
       if (!imageUpload.ok) {
         throw new Error(`Failed to create avatar for bot ${botName}`);
@@ -59,7 +68,6 @@ function Avatar() {
       setUploadSuccess(true);
     } catch (err) {
       console.error("Error during upload:", err);
-      alert("Upload failed. See console for details.");
     } finally {
       setIsUploading(false);
     }
