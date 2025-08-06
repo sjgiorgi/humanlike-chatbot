@@ -78,6 +78,12 @@ const Conversation = () => {
             { sender: "AI Chatbot", content: data.initial_utterance },
           ]);
         }
+        
+        // Handle existing messages if conversation was already created
+        if (data.existing_messages && data.existing_messages.length > 0) {
+          setAvatar(avatar_data);
+          setMessages(data.existing_messages);
+        }
       } catch (err) {
         console.error("Failed to initialize conversation:", err);
       }
