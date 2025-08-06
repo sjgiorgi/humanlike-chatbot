@@ -88,8 +88,8 @@ class InitializeConversationAPIView(View):
                         participant_id=None,
                     )
                     logger.debug("Initial bot message saved to DB.")
-                except Exception:
-                    logger.exception("Failed to save initial bot message")
+                except Exception as e:
+                    logger.exception("Failed to save initial bot message: %s", str(e))
 
             return JsonResponse(
                 {
