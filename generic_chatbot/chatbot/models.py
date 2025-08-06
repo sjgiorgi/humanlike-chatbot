@@ -62,6 +62,12 @@ class Bot(models.Model):
     avatar_type = models.CharField(
         max_length=20, choices=AVATAR_CHOICES, default="none",
     )
+    
+    # Message chunking control (bot-specific)
+    chunk_messages = models.BooleanField(
+        default=True,
+        help_text="If true, split responses into human-like chunks; if false, send as one blob",
+    )
 
     def __str__(self):
         return self.name
