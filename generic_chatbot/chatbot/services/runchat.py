@@ -18,23 +18,21 @@ async def save_chat_to_db(
         conversation = await sync_to_async(Conversation.objects.get)(
             conversation_id=conversation_id,
         )
-        print(
-            f"Found conversation {conversation.conversation_id}, inserting message...",
-        )
 
-        await sync_to_async(Utterance.objects.create)(
+        utterance = await sync_to_async(Utterance.objects.create)(
             conversation=conversation,
             speaker_id=speaker_id,
             bot_name=bot_name,
             participant_id=participant_id,
             text=text,
         )
-        print("✅ Successfully saved message to Utterance table.")
 
     except Conversation.DoesNotExist:
         print(f"❌ Conversation with ID {conversation_id} not found.")
     except Exception as e:
         print(f"❌ Failed to save message to Utterance table: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 async def run_chat_round(bot_name, conversation_id, participant_id, message):
