@@ -2,18 +2,16 @@ from django.db import models
 
 
 class Conversation(models.Model):
-    conversation_id = models.CharField(
-        max_length=255, unique=True)  # Conversation ID
-    bot_name = models.CharField(
-        max_length=255, default="DefaultBot")  # Bot Name
+    conversation_id = models.CharField(max_length=255, unique=True)  # Conversation ID
+    bot_name = models.CharField(max_length=255, default="DefaultBot")  # Bot Name
     participant_id = models.CharField(max_length=255)
     initial_utterance = models.CharField(max_length=255, null=True, blank=True)
     study_name = models.CharField(max_length=255, null=True, blank=True)
     user_group = models.CharField(max_length=255, null=True, blank=True)
-    survey_id = models.CharField(
-        max_length=255, null=True, blank=True)  # Survey ID
+    survey_id = models.CharField(max_length=255, null=True, blank=True)  # Survey ID
     survey_meta_data = models.TextField(
-        null=True, blank=True)  # Survey metadata (can be long)
+        null=True, blank=True,
+    )  # Survey metadata (can be long)
     started_time = models.DateTimeField(auto_now_add=True)  # Start time
 
     def __str__(self):
@@ -21,20 +19,24 @@ class Conversation(models.Model):
 
 
 class Utterance(models.Model):
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE,
-                                     # Unique identifier per conversation
-                                     related_name="utterances", null=True, blank=True)
-    speaker_id = models.CharField(
-        max_length=255)       # 'participant' or 'bot'
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        # Unique identifier per conversation
+        related_name="utterances",
+        null=True,
+        blank=True,
+    )
+    speaker_id = models.CharField(max_length=255)  # 'participant' or 'bot'
     bot_name = models.CharField(max_length=255, null=True, blank=True)
     participant_id = models.CharField(max_length=255, null=True, blank=True)
-    created_time = models.DateTimeField(
-        auto_now_add=True)               # Timestamp
+    created_time = models.DateTimeField(auto_now_add=True)  # Timestamp
     text = models.TextField()
 
     # new fields added for voice chat
     audio_file = models.FileField(
-        upload_to="utterance_audio/", null=True, blank=True)  # path to saved audio
+        upload_to="utterance_audio/", null=True, blank=True,
+    )  # path to saved audio
     # to distinguish voice vs text utterances
     is_voice = models.BooleanField(default=False)
 
@@ -44,23 +46,22 @@ class Utterance(models.Model):
 
 class Bot(models.Model):
     # Make name the unique identifier
-    name = models.CharField(max_length=255, unique=True,
-                            default="DefaultBotName")
+    name = models.CharField(max_length=255, unique=True, default="DefaultBotName")
     prompt = models.TextField()  # Bot's prompt
     # Model type (e.g., OpenAI, Anthropic)
     model_type = models.CharField(max_length=255, default="OpenAI")
-    model_id = models.CharField(
-        max_length=255, default="gpt-4")  # Model ID, optional
+    model_id = models.CharField(max_length=255, default="gpt-4")  # Model ID, optional
     initial_utterance = models.TextField(blank=True, null=True)
 
     # New Column:
     AVATAR_CHOICES = [
-        ('none', 'None'),
-        ('default', 'Default'),
-        ('user', 'User Provided'),
+        ("none", "None"),
+        ("default", "Default"),
+        ("user", "User Provided"),
     ]
     avatar_type = models.CharField(
-        max_length=20, choices=AVATAR_CHOICES, default="none")
+        max_length=20, choices=AVATAR_CHOICES, default="none",
+    )
 
     def __str__(self):
         return self.name
@@ -75,21 +76,25 @@ class Keystroke(models.Model):
     timestamp = models.DateTimeField(auto_now_add=False)
 
     def __str__(self):
-        return f"Keystroke log for conversation {self.conversation_id} at {self.timestamp}"
+        return (
+            f"Keystroke log for conversation {self.conversation_id} at {self.timestamp}"
+        )
 
 
 class Avatar(models.Model):
-     # New Column:
+    # New Column:
     CONDITION_CHOICES = [
         ("control", "control"),
         ("similar", "similar"),
         ("dissimilar", "dissimilar"),
     ]
-    bot = models.ForeignKey(Bot, on_delete=models.CASCADE,
-                            related_name="avatars", null=True, blank=True)
+    bot = models.ForeignKey(
+        Bot, on_delete=models.CASCADE, related_name="avatars", null=True, blank=True,
+    )
     bot_conversation = models.CharField(max_length=255, null=True, blank=True)
     condition = models.CharField(
-        max_length=20, choices=CONDITION_CHOICES, default="similar")
+        max_length=20, choices=CONDITION_CHOICES, default="similar",
+    )
     participant_avatar = models.TextField(null=True, blank=True)
     chatbot_avatar = models.TextField(null=True, blank=True)
 
@@ -100,7 +105,7 @@ class Avatar(models.Model):
 class Control(models.Model):
     chunk_messages = models.BooleanField(
         default=True,
-        help_text="If true, split into human-like chunks; if false, send as one blob"
+        help_text="If true, split into human-like chunks; if false, send as one blob",
     )
 
     def __str__(self):
