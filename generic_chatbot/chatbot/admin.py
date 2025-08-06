@@ -22,7 +22,7 @@ class BaseAdmin(admin.ModelAdmin):
 
 @admin.register(Control)
 class ControlAdmin(BaseAdmin):
-    list_display = ("chunk_messages",)
+    list_display = ("chunk_messages", "deprecation_warning")
     actions = None
 
     def has_add_permission(self, request):
@@ -32,6 +32,10 @@ class ControlAdmin(BaseAdmin):
     def has_delete_permission(self, request, obj=None):
         # prevent deletion
         return False
+    
+    def deprecation_warning(self, obj):
+        return format_html('<span style="color: #dc3545; font-weight: bold;">⚠️ DEPRECATED - Use Bot-specific settings instead</span>')
+    deprecation_warning.short_description = "Status"
 
 
 @admin.register(Conversation)
@@ -140,10 +144,11 @@ class BotAdmin(BaseAdmin):
         "model_id",
         "avatar_type",
         "has_initial_utterance",
+        "chunk_messages",
     )
     list_display_links = ("name",)
     search_fields = ("name", "model_type", "model_id")
-    list_filter = ("model_type", "avatar_type")
+    list_filter = ("model_type", "avatar_type", "chunk_messages")
     ordering = ("name",)
     
     def has_initial_utterance(self, obj):
@@ -157,6 +162,10 @@ class BotAdmin(BaseAdmin):
         }),
         ("Configuration", {
             "fields": ("prompt", "initial_utterance", "avatar_type")
+        }),
+        ("Response Settings", {
+            "fields": ("chunk_messages",),
+            "description": "Control how bot responses are formatted"
         }),
     )
 
