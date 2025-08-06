@@ -1,6 +1,6 @@
+from django.conf import settings
 from openai import OpenAI
 from openai._compat import model_dump
-from django.conf import settings
 
 
 def moderate_message(message: str) -> str:
@@ -15,7 +15,7 @@ def moderate_message(message: str) -> str:
     # Call OpenAI moderation API
     moderation_response = OpenAI(api_key=settings.OPENAI_API_KEY).moderations.create(
         input=message,
-        model="omni-moderation-latest"
+        model="omni-moderation-latest",
     )
 
     # Extract category scores

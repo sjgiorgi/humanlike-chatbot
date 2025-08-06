@@ -1,0 +1,53 @@
+[tool.ruff]
+# Enable essential rules for code quality
+select = ["E", "F", "I", "W", "UP", "COM", "Q", "T201", "TID", "ARG", "PTH", "ERA", "PLR", "SIM", "RET", "B", "C4", "DTZ", "EM", "EXE", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "RSE", "SLF", "SLOT", "TRY", "NPY", "AIR", "PERF", "FURB", "LOG", "RUF"]
+ignore = ["E501", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901", "TRY003", "TRY300", "TRY301", "EM101", "EM102", "B904", "TID252", "INP001", "PLC0415", "ARG001", "ARG002", "N806", "SIM108", "RET504", "RET505", "W291", "W293", "G004", "TRY400", "RUF003", "PTH123", "DTZ005", "TRY401", "RUF012"]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "chatbot/migrations",
+]
+
+# Same as Black.
+line-length = 88
+
+# Assume Python 3.8
+target-version = "py38"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto" 

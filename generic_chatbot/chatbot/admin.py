@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Conversation, Utterance, Bot, Keystroke, Control
+
+from .models import Bot, Control, Conversation, Keystroke, Utterance
 
 
 @admin.register(Control)
@@ -19,13 +20,22 @@ class ControlAdmin(admin.ModelAdmin):
 @admin.register(Conversation)
 class ConversationAdmin(admin.ModelAdmin):
     list_display = (
-        "conversation_id", "bot_name", "participant_id",
-        "initial_utterance", "study_name", "user_group",
-        "survey_id", "started_time",
+        "conversation_id",
+        "bot_name",
+        "participant_id",
+        "initial_utterance",
+        "study_name",
+        "user_group",
+        "survey_id",
+        "started_time",
     )
     search_fields = (
-        "conversation_id", "bot_name", "participant_id",
-        "study_name", "user_group", "survey_id",
+        "conversation_id",
+        "bot_name",
+        "participant_id",
+        "study_name",
+        "user_group",
+        "survey_id",
     )
     list_filter = ("bot_name", "user_group")
     readonly_fields = ("started_time",)
@@ -34,8 +44,12 @@ class ConversationAdmin(admin.ModelAdmin):
 @admin.register(Utterance)
 class UtteranceAdmin(admin.ModelAdmin):
     list_display = (
-        "conversation", "speaker_id", "bot_name",
-        "participant_id", "created_time", "is_voice",
+        "conversation",
+        "speaker_id",
+        "bot_name",
+        "participant_id",
+        "created_time",
+        "is_voice",
     )
     search_fields = ("speaker_id", "bot_name", "participant_id", "text")
     list_filter = ("is_voice", "speaker_id", "bot_name")
@@ -51,8 +65,10 @@ class BotAdmin(admin.ModelAdmin):
 @admin.register(Keystroke)
 class KeystrokeAdmin(admin.ModelAdmin):
     list_display = (
-        "conversation_id", "timestamp",
-        "keystroke_count", "total_time_on_page",
+        "conversation_id",
+        "timestamp",
+        "keystroke_count",
+        "total_time_on_page",
         "total_time_away_from_page",
     )
     search_fields = ("conversation_id",)

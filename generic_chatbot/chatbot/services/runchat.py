@@ -1,26 +1,33 @@
-from kani import ChatMessage, ChatRole, Kani
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
-from ..models import Bot, Conversation, Utterance
+from kani import ChatMessage, ChatRole, Kani
+
 from server.engine import get_or_create_engine
+
+from ..models import Bot, Conversation, Utterance
 from .moderation import moderate_message
 
 
-async def save_chat_to_db(conversation_id, speaker_id, text, bot_name=None, participant_id=None):
+async def save_chat_to_db(
+    conversation_id, speaker_id, text, bot_name=None, participant_id=None,
+):
     """
     Save chat messages asynchronously to the Utterance table.
     """
     try:
-        conversation = await sync_to_async(Conversation.objects.get)(conversation_id=conversation_id)
+        conversation = await sync_to_async(Conversation.objects.get)(
+            conversation_id=conversation_id,
+        )
         print(
-            f"Found conversation {conversation.conversation_id}, inserting message...")
+            f"Found conversation {conversation.conversation_id}, inserting message...",
+        )
 
         await sync_to_async(Utterance.objects.create)(
             conversation=conversation,
             speaker_id=speaker_id,
             bot_name=bot_name,
             participant_id=participant_id,
-            text=text
+            text=text,
         )
         print("✅ Successfully saved message to Utterance table.")
 
@@ -52,14 +59,14 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
             speaker_id="user",
             text=message,
             bot_name=None,
-            participant_id=participant_id
+            participant_id=participant_id,
         )
         await save_chat_to_db(
             conversation_id=conversation_id,
             speaker_id="assistant",
             text=warning_text,
             bot_name=bot.name,
-            participant_id=None
+            participant_id=None,
         )
         return warning_text
 
@@ -74,16 +81,14 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     formatted_history = [
         ChatMessage(
             role=ChatRole.USER if msg["role"] == "user" else ChatRole.ASSISTANT,
-            content=str(msg["content"])
+            content=str(msg["content"]),
         )
         for msg in conversation_history
     ]
 
     # Run Kani
-    engine = get_or_create_engine(
-        bot.model_type, bot.model_id, engine_instances)
-    kani = Kani(engine, system_prompt=bot.prompt,
-                chat_history=formatted_history)
+    engine = get_or_create_engine(bot.model_type, bot.model_id, engine_instances)
+    kani = Kani(engine, system_prompt=bot.prompt, chat_history=formatted_history)
 
     latest_user_message = formatted_history[-1].content
     response_text = ""
@@ -95,8 +100,7 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     response_text = response_text.strip()
 
     # Append bot response
-    conversation_history.append(
-        {"role": "assistant", "content": response_text})
+    conversation_history.append({"role": "assistant", "content": response_text})
     cache.set(cache_key, conversation_history, timeout=3600)
 
     # Save to DB
@@ -105,7 +109,7 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
         speaker_id="user",
         text=message,
         bot_name=None,
-        participant_id=participant_id
+        participant_id=participant_id,
     )
 
     await save_chat_to_db(
@@ -113,7 +117,7 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
         speaker_id="assistant",
         text=response_text,
         bot_name=bot.name,
-        participant_id=None
+        participant_id=None,
     )
 
     return response_text
