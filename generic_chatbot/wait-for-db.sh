@@ -12,7 +12,6 @@ done
 
 >&2 echo "✅ MySQL is up - proceeding with migrations"
 
-'''
 # Run Django migrations
 echo "Running makemigrations..."
 
@@ -33,6 +32,16 @@ else
     exit 1
 fi
 
+# Collect static files (to match production behavior)
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
+if [ $? -eq 0 ]; then
+    echo "✅ Static files collected successfully."
+else
+    echo "❌ Error collecting static files."
+    exit 1
+fi
+
 # Load bots if necessary
 echo "Loading bots..."
 python manage.py load_bots
@@ -42,7 +51,7 @@ else
     echo "❌ Error loading bots."
     exit 1
 fi
-'''
+
 >&2 echo "✅ All setup tasks completed. Starting application..."
 
 
