@@ -97,9 +97,7 @@ class BotAdminForm(forms.ModelForm):
                             self.fields["avatar_image"].help_text = f"Current avatar: {avatar.chatbot_avatar}"
                     
                     # Show remove avatar option only when there's an existing avatar
-                    self.fields["remove_avatar"].widget.attrs.update({
-                        'style': 'margin-top: 10px; padding: 8px; border: 1px solid #dc3545; border-radius: 4px; background-color: #fff5f5;'
-                    })
+                    pass
                 else:
                     # Hide remove avatar option if no avatar exists
                     self.fields["remove_avatar"].widget = forms.HiddenInput()
@@ -118,6 +116,7 @@ class BaseAdmin(admin.ModelAdmin):
         css = {
             "all": ("admin/css/custom_admin.css",),
         }
+        js = ("admin/js/custom_admin.js",)
     
     def get_list_display(self, request):
         """Add custom styling to list display"""
@@ -139,7 +138,7 @@ class ControlAdmin(BaseAdmin):
         return False
     
     def deprecation_warning(self, obj):
-        return format_html('<span style="color: #dc3545; font-weight: bold;">⚠️ DEPRECATED - Use Bot-specific settings instead</span>')
+        return format_html('<span>⚠️ DEPRECATED - Use Bot-specific settings instead</span>')
     deprecation_warning.short_description = "Status"
 
 

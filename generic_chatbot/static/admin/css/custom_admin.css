@@ -1,0 +1,75 @@
+/* Minimal Admin CSS - Respects Django's Original Design */
+
+/* ===== BASIC FUNCTIONALITY ===== */
+/* Make links clearly clickable */
+.field-utterance_count .utterance-link,
+.field-conversation_link .conversation-link {
+    color: var(--link-fg);
+    text-decoration: underline;
+    font-weight: normal;
+}
+
+.field-utterance_count .utterance-link:hover,
+.field-conversation_link .conversation-link:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+/* Empty state styling */
+.field-utterance_count .no-utterances,
+.field-conversation_link .no-conversation {
+    color: var(--body-quiet-color);
+    font-style: italic;
+}
+
+/* ===== MESSAGE PREVIEW ===== */
+.field-text_preview .message-preview {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
+/* ===== SESSION TIME ===== */
+.field-total_session_time .session-time {
+    font-weight: normal;
+    color: var(--body-fg);
+}
+
+/* ===== DEPRECATION WARNING ===== */
+.field-deprecation_warning span {
+    color: var(--error-fg);
+    font-weight: bold;
+}
+
+/* ===== AVATAR PREVIEW ===== */
+.field-avatar_preview img,
+.field-avatar_preview_field img {
+    border: 1px solid var(--border-color);
+    max-width: 100px;
+    max-height: 100px;
+}
+
+/* ===== RESPONSIVE TEXT ===== */
+/* Prevent text overflow in table cells */
+#result_list td,
+#changelist table td {
+    max-width: 300px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ===== MINIMAL ENHANCEMENTS ===== */
+/* Subtle hover effect on table rows */
+#result_list tbody tr:hover,
+#changelist table tbody tr:hover {
+    background-color: var(--darkened-bg);
+}
+
+/* Ensure proper spacing */
+.form-row {
+    margin-bottom: 15px;
+}
+
+/* Keep Django's original styling for everything else */ 
