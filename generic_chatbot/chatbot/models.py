@@ -1,6 +1,19 @@
 from django.db import models
 
 
+class Persona(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    instructions = models.TextField(help_text="Instructions for this persona")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+
+
 class Conversation(models.Model):
     conversation_id = models.CharField(max_length=255, unique=True)  # Conversation ID
     bot_name = models.CharField(max_length=255, default="DefaultBot")  # Bot Name
@@ -13,6 +26,16 @@ class Conversation(models.Model):
         null=True, blank=True,
     )  # Survey metadata (can be long)
     started_time = models.DateTimeField(auto_now_add=True)  # Start time
+    
+    # Track which persona was randomly selected for this conversation
+    selected_persona = models.ForeignKey(
+        Persona,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="conversations",
+        help_text="The persona randomly selected for this conversation"
+    )
 
     def __str__(self):
         return f"Conversation {self.conversation_id} started at {self.started_time}"
@@ -67,6 +90,14 @@ class Bot(models.Model):
     chunk_messages = models.BooleanField(
         default=True,
         help_text="If true, split responses into human-like chunks; if false, send as one blob",
+    )
+
+    # Many-to-many relationship with personas
+    personas = models.ManyToManyField(
+        Persona,
+        blank=True,
+        related_name="bots",
+        help_text="Select personas that this bot should embody"
     )
 
     def __str__(self):
