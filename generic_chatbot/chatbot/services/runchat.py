@@ -1,3 +1,5 @@
+import logging
+
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from kani import ChatMessage, ChatRole, Kani
@@ -6,6 +8,12 @@ from server.engine import get_or_create_engine
 
 from ..models import Bot, Conversation, Utterance
 from .moderation import moderate_message
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
+
+# Dictionary to store engine instances
+engine_instances = {}
 
 
 def generate_system_prompt(bot, selected_persona=None):
@@ -25,7 +33,7 @@ def generate_system_prompt(bot, selected_persona=None):
         system_prompt = bot.prompt.strip() if bot.prompt else ""
         
         # Add selected persona instructions if available
-        if selected_persona and hasattr(selected_persona, 'name') and hasattr(selected_persona, 'instructions'):
+        if selected_persona and hasattr(selected_persona, "name") and hasattr(selected_persona, "instructions"):
             # Combine base prompt with persona instructions
             if system_prompt:
                 system_prompt += "\n\n"
@@ -34,7 +42,7 @@ def generate_system_prompt(bot, selected_persona=None):
         
         return system_prompt
     except Exception as e:
-        print(f"❌ Error generating system prompt: {e}")
+        logger.error(f"Error generating system prompt: {e}")
         # Fallback to just the bot's prompt
         return bot.prompt.strip() if bot.prompt else ""
 
@@ -50,7 +58,7 @@ async def save_chat_to_db(
             conversation_id=conversation_id,
         )
 
-        utterance = await sync_to_async(Utterance.objects.create)(
+        await sync_to_async(Utterance.objects.create)(
             conversation=conversation,
             speaker_id=speaker_id,
             bot_name=bot_name,
@@ -59,9 +67,9 @@ async def save_chat_to_db(
         )
 
     except Conversation.DoesNotExist:
-        print(f"❌ Conversation with ID {conversation_id} not found.")
+        logger.warning(f"Conversation with ID {conversation_id} not found.")
     except Exception as e:
-        print(f"❌ Failed to save message to Utterance table: {e}")
+        logger.error(f"Failed to save message to Utterance table: {e}")
         import traceback
         traceback.print_exc()
 
@@ -72,9 +80,8 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     Runs moderation on incoming message before processing.
     Returns the bot response text.
     """
-    engine_instances = {}
     # Fetch bot object with personas prefetched
-    bot = await sync_to_async(Bot.objects.prefetch_related('personas').get)(name=bot_name)
+    bot = await sync_to_async(Bot.objects.prefetch_related("personas").get)(name=bot_name)
 
     # Moderate incoming message
     # Run in thread to avoid blocking
@@ -116,9 +123,9 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
             
             # Populate cache
             cache.set(cache_key, conversation_history, timeout=3600)
-            print(f"📚 Loaded {len(conversation_history)} messages from database for conversation {conversation_id}")
+            logger.info(f"Loaded {len(conversation_history)} messages from database for conversation {conversation_id}")
         except Exception as e:
-            print(f"⚠️ Failed to load conversation history from database: {e}")
+            logger.warning(f"Failed to load conversation history from database: {e}")
             conversation_history = []
 
     # Append new message
@@ -134,17 +141,17 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     ]
 
     # Get the selected persona for this conversation
-    conversation = await sync_to_async(Conversation.objects.select_related('selected_persona').get)(conversation_id=conversation_id)
+    conversation = await sync_to_async(Conversation.objects.select_related("selected_persona").get)(conversation_id=conversation_id)
     selected_persona = conversation.selected_persona
     
     # Generate dynamic system prompt combining bot prompt with selected persona
     system_prompt = generate_system_prompt(bot, selected_persona)
     
     # Log the generated prompt for debugging
-    print(f"🤖 Bot '{bot.name}' system prompt:")
-    print(f"   Base prompt: {bot.prompt[:100] if bot.prompt else 'None'}...")
-    print(f"   Selected persona: {selected_persona.name if selected_persona and hasattr(selected_persona, 'name') else 'None'}")
-    print(f"   Final prompt length: {len(system_prompt)} characters")
+    logger.info(f"Bot '{bot.name}' system prompt:")
+    logger.info(f"   Base prompt: {bot.prompt[:100] if bot.prompt else 'None'}...")
+    logger.info(f"   Selected persona: {selected_persona.name if selected_persona and hasattr(selected_persona, 'name') else 'None'}")
+    logger.info(f"   Final prompt length: {len(system_prompt)} characters")
 
     # Run Kani
     engine = get_or_create_engine(bot.model_type, bot.model_id, engine_instances)
