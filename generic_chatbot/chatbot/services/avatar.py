@@ -329,7 +329,11 @@ class AvatarDetailAPIView(View):
             bot = Bot.objects.get(pk=int(bot_name))
             avatar = Avatar.objects.get(bot=bot, bot_conversation=None)
         except Bot.DoesNotExist:
+            logger.error(f"[ERROR] Bot with pk={bot_name} not found")
             return JsonResponse({"error": "Bot not found"}, status=404)
+        except Avatar.DoesNotExist:
+            logger.error(f"[ERROR] Avatar for bot pk={bot_name} not found")
+            return JsonResponse({"error": "Avatar not found"}, status=404)
 
         try:
             # Check if this is a simple file upload (from EditBots)
@@ -385,14 +389,22 @@ class AvatarDetailAPIView(View):
                         logger.info("[DEBUG] Using production environment - uploading to S3")
                         try:
                             s3_key = f"avatar/{bot.name}_{int(time.time())}.png"
+                            logger.info(f"[DEBUG] Attempting S3 upload with key: {s3_key}")
                             # Reset the ContentFile to the beginning before uploading
                             edit_image.seek(0)
-                            upload(edit_image, s3_key)
-                            avatar.chatbot_avatar = s3_key
+                            upload_result = upload(edit_image, s3_key)
+                            logger.info(f"[DEBUG] S3 upload result: {upload_result}")
+                            if upload_result:
+                                avatar.chatbot_avatar = s3_key
+                                logger.info(f"[DEBUG] Avatar record updated with S3 key: {s3_key}")
+                            else:
+                                logger.error("[ERROR] S3 upload returned None")
+                                raise Exception("S3 upload failed - returned None")
                         except Exception as e:
                             logger.exception(f"[ERROR] S3 upload failed: {e}")
-                            # Fallback to local path if S3 fails
-                            avatar.chatbot_avatar = edit_image.name if hasattr(edit_image, 'name') else str(edit_image)
+                            # For production, we can't fallback to local storage
+                            # Return error instead of saving invalid path
+                            return JsonResponse({"error": f"Failed to upload avatar to S3: {str(e)}"}, status=500)
                 
                 avatar.save()
                 
@@ -424,6 +436,7 @@ class AvatarDetailAPIView(View):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON payload."}, status=400)
         except Exception as e:
+            logger.exception(f"[ERROR] AvatarDetailAPIView.post failed: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     def delete(self, request, bot_name, *args, **kwargs):
