@@ -413,32 +413,43 @@ class BotAdmin(BaseAdmin):
                             image_key = image.name if hasattr(image, 'name') else f"{obj.name}_{int(time.time())}.png"
                             
                             if image and image_key:
-                                # Upload processed image to S3
-                                upload(image, image_key)
-                                
-                                # Clean up raw image
-                                delete("uploads", raw_filename)
-                                
-                                # Create or update Avatar record
-                                from .models import Avatar
-                                avatar, created = Avatar.objects.get_or_create(
-                                    bot=obj,
-                                    bot_conversation__isnull=True,
-                                    defaults={"chatbot_avatar": image_key},
-                                )
-                                
-                                if not created:
-                                    # Delete old avatar from S3 if exists
-                                    if avatar.chatbot_avatar:
-                                        delete("avatar", avatar.chatbot_avatar)
-                                    avatar.chatbot_avatar = image_key
-                                    avatar.save()
-                                
-                                self.message_user(
-                                    request,
-                                    f"Avatar uploaded and processed successfully: {image_key}",
-                                    level="SUCCESS",
-                                )
+                                try:
+                                    # Upload processed image to S3
+                                    upload_result = upload(image, image_key)
+                                    if not upload_result:
+                                        raise Exception("S3 upload returned None")
+                                    
+                                    # Clean up raw image
+                                    delete("uploads", raw_filename)
+                                    
+                                    # Create or update Avatar record
+                                    from .models import Avatar
+                                    avatar, created = Avatar.objects.get_or_create(
+                                        bot=obj,
+                                        bot_conversation__isnull=True,
+                                        defaults={"chatbot_avatar": image_key},
+                                    )
+                                    
+                                    if not created:
+                                        # Delete old avatar from S3 if exists
+                                        if avatar.chatbot_avatar:
+                                            delete("avatar", avatar.chatbot_avatar)
+                                        avatar.chatbot_avatar = image_key
+                                        avatar.save()
+                                    
+                                    self.message_user(
+                                        request,
+                                        f"Avatar uploaded and processed successfully: {image_key}",
+                                        level="SUCCESS",
+                                    )
+                                except Exception as e:
+                                    # Clean up raw image on failure
+                                    delete("uploads", raw_filename)
+                                    self.message_user(
+                                        request,
+                                        f"Failed to upload avatar to S3: {str(e)}",
+                                        level="ERROR",
+                                    )
                             else:
                                 # Clean up raw image on failure
                                 delete("uploads", raw_filename)
