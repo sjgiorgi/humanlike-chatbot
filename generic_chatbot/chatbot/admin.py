@@ -397,12 +397,39 @@ class BotAdmin(BaseAdmin):
                         raw_image.save(raw_image_bytes, format="PNG")
                         raw_image_bytes.seek(0)
                         
-                        # Upload raw image to S3
-                        upload(raw_image_bytes, raw_image_key)
+                        # Upload raw image to S3 (use direct S3 upload to avoid avatar prefix)
+                        from .services.s3_helper import s3
+                        import os
+                        try:
+                            s3.upload_fileobj(
+                                raw_image_bytes,
+                                os.getenv("AWS_BUCKET_NAME"),
+                                raw_image_key,
+                                ExtraArgs={
+                                    "ContentType": "image/png",
+                                    "ACL": "private",
+                                },
+                            )
+                            print(f"[DEBUG] Successfully uploaded raw image to S3: {raw_image_key}")
+                        except Exception as e:
+                            print(f"[ERROR] Failed to upload raw image to S3: {e}")
+                            raise Exception(f"Failed to upload raw image to S3: {str(e)}")
                         
                         # Step 2: Process through generate_avatar (like frontend does)
                         from .services.avatar import download
-                        processed_image = download("uploads", raw_filename)
+                        try:
+                            processed_image = download("uploads", raw_filename)
+                            if not processed_image:
+                                raise Exception(f"Failed to download image from S3: {raw_image_key}")
+                            print(f"[DEBUG] Successfully downloaded image from S3: {raw_image_key}")
+                        except Exception as e:
+                            print(f"[ERROR] Failed to download image from S3: {e}")
+                            # Clean up raw image on failure
+                            s3.delete_object(
+                                Bucket=os.getenv("AWS_BUCKET_NAME"),
+                                Key=raw_image_key,
+                            )
+                            raise Exception(f"Failed to download image from S3: {str(e)}")
                         
                         if processed_image:
                             image = generate_avatar(
@@ -419,8 +446,11 @@ class BotAdmin(BaseAdmin):
                                     if not upload_result:
                                         raise Exception("S3 upload returned None")
                                     
-                                    # Clean up raw image
-                                    delete("uploads", raw_filename)
+                                    # Clean up raw image (use direct S3 delete to avoid avatar prefix)
+                                    s3.delete_object(
+                                        Bucket=os.getenv("AWS_BUCKET_NAME"),
+                                        Key=raw_image_key,
+                                    )
                                     
                                     # Create or update Avatar record
                                     from .models import Avatar
@@ -444,7 +474,10 @@ class BotAdmin(BaseAdmin):
                                     )
                                 except Exception as e:
                                     # Clean up raw image on failure
-                                    delete("uploads", raw_filename)
+                                    s3.delete_object(
+                                        Bucket=os.getenv("AWS_BUCKET_NAME"),
+                                        Key=raw_image_key,
+                                    )
                                     self.message_user(
                                         request,
                                         f"Failed to upload avatar to S3: {str(e)}",
@@ -452,7 +485,10 @@ class BotAdmin(BaseAdmin):
                                     )
                             else:
                                 # Clean up raw image on failure
-                                delete("uploads", raw_filename)
+                                s3.delete_object(
+                                    Bucket=os.getenv("AWS_BUCKET_NAME"),
+                                    Key=raw_image_key,
+                                )
                                 self.message_user(
                                     request,
                                     "Failed to process avatar image. Please try again.",
@@ -460,7 +496,10 @@ class BotAdmin(BaseAdmin):
                                 )
                         else:
                             # Clean up raw image on failure
-                            delete("uploads", raw_filename)
+                            s3.delete_object(
+                                Bucket=os.getenv("AWS_BUCKET_NAME"),
+                                Key=raw_image_key,
+                            )
                             self.message_user(
                                 request,
                                 "Failed to download image for processing. Please try again.",
