@@ -40,18 +40,21 @@ def download(prefix, file_path):
     
     try:
         # Step 1: Download image from S3
+        s3_key = f"{prefix}/{file_path}"
+        print(f"[DEBUG] Attempting to download from S3: {s3_key}")
         s3_response = s3.get_object(
-            Bucket=os.getenv("AWS_BUCKET_NAME"), Key=f"{prefix}/{file_path}",
+            Bucket=os.getenv("AWS_BUCKET_NAME"), Key=s3_key,
         )
         image_data = s3_response["Body"].read()
+        print(f"[DEBUG] Successfully downloaded {len(image_data)} bytes from S3")
 
         # Step 2: Load into PIL (or whatever your processing pipeline uses)
         return Image.open(io.BytesIO(image_data))
 
     except s3.exceptions.NoSuchKey:
-        print({"error": "Image not found in S3"})
+        print(f"[ERROR] Image not found in S3: {prefix}/{file_path}")
     except Exception as e:
-        print({"error": str(e)})
+        print(f"[ERROR] Download failed: {str(e)}")
     return None
 
 
