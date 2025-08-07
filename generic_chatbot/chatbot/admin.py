@@ -1,16 +1,22 @@
 
+import io
+import logging
+import time
+import uuid
+
 from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.html import format_html
-import io
-import uuid
 from PIL import Image
 
-from .models import Avatar, Bot, Control, Conversation, Keystroke, Utterance, Persona
+from .models import Avatar, Bot, Control, Conversation, Keystroke, Persona, Utterance
 from .services.avatar import generate_avatar
 from .services.s3_helper import delete, get_presigned_url, upload
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 
 class AvatarImageField(forms.FileField):
@@ -79,7 +85,7 @@ class BotAdminForm(forms.ModelForm):
                                 '<div class="current-avatar-section"><strong>Current Avatar:</strong><br>'
                                 '<img src="{}" alt="Current Avatar" class="current-avatar" /><br>'
                                 '<small>{}</small></div>',
-                                image_url, avatar.chatbot_avatar
+                                image_url, avatar.chatbot_avatar,
                             )
                         else:
                             self.fields["avatar_image"].help_text = f"Current avatar: {avatar.chatbot_avatar} (file not found)"
@@ -91,13 +97,12 @@ class BotAdminForm(forms.ModelForm):
                                 '<div class="current-avatar-section"><strong>Current Avatar:</strong><br>'
                                 '<img src="{}" alt="Current Avatar" class="current-avatar" /><br>'
                                 '<small>{}</small></div>',
-                                image_url, avatar.chatbot_avatar
+                                image_url, avatar.chatbot_avatar,
                             )
                         else:
                             self.fields["avatar_image"].help_text = f"Current avatar: {avatar.chatbot_avatar}"
                     
                     # Show remove avatar option only when there's an existing avatar
-                    pass
                 else:
                     # Hide remove avatar option if no avatar exists
                     self.fields["remove_avatar"].widget = forms.HiddenInput()
@@ -137,7 +142,7 @@ class ControlAdmin(BaseAdmin):
         return False
     
     def deprecation_warning(self, obj):
-        return format_html('<span>⚠️ DEPRECATED - Use Bot-specific settings instead</span>')
+        return format_html("<span>⚠️ DEPRECATED - Use Bot-specific settings instead</span>")
     deprecation_warning.short_description = "Status"
 
 
@@ -305,7 +310,7 @@ class BotAdmin(BaseAdmin):
     
     def get_persona_count(self, obj):
         return obj.personas.count()
-    get_persona_count.short_description = 'Personas Count'
+    get_persona_count.short_description = "Personas Count"
     
     def has_initial_utterance(self, obj):
         return bool(obj.initial_utterance and obj.initial_utterance.strip())
@@ -330,7 +335,7 @@ class BotAdmin(BaseAdmin):
                         image_url = f"/media/avatars/{avatar.chatbot_avatar}"
                         return format_html(
                             '<img src="{}" alt="Avatar" class="avatar-preview" title="{}" />',
-                            image_url, avatar.chatbot_avatar
+                            image_url, avatar.chatbot_avatar,
                         )
                 else:
                     # Production: Get presigned URL for display
@@ -338,7 +343,7 @@ class BotAdmin(BaseAdmin):
                     if image_url:
                         return format_html(
                             '<img src="{}" alt="Avatar" class="avatar-preview" title="{}" />',
-                            image_url, avatar.chatbot_avatar
+                            image_url, avatar.chatbot_avatar,
                         )
         except Exception:
             pass
@@ -395,11 +400,12 @@ class BotAdmin(BaseAdmin):
                             obj.name,
                             obj.avatar_type,
                         )
-                        image_key = image.name if hasattr(image, 'name') else f"{obj.name}_{int(time.time())}.png"
+                        image_key = image.name if hasattr(image, "name") else f"{obj.name}_{int(time.time())}.png"
                         
                         if image and image_key:
                             # For local development, save to local media directory
                             import os
+
                             from django.conf import settings
                             
                             # Create media directory if it doesn't exist
@@ -408,7 +414,7 @@ class BotAdmin(BaseAdmin):
                             
                             # Save processed image locally
                             local_path = os.path.join(media_dir, image_key)
-                            with open(local_path, 'wb') as f:
+                            with open(local_path, "wb") as f:
                                 f.write(image.read())
                             
                             # Create or update Avatar record
@@ -452,8 +458,9 @@ class BotAdmin(BaseAdmin):
                         raw_image_bytes.seek(0)
                         
                         # Upload raw image to S3 (use direct S3 upload to avoid avatar prefix)
-                        from .services.s3_helper import s3
                         import os
+
+                        from .services.s3_helper import s3
                         try:
                             s3.upload_fileobj(
                                 raw_image_bytes,
@@ -464,10 +471,10 @@ class BotAdmin(BaseAdmin):
                                     "ACL": "private",
                                 },
                             )
-                            print(f"[DEBUG] Successfully uploaded raw image to S3: {raw_image_key}")
+                            logger.debug(f"Successfully uploaded raw image to S3: {raw_image_key}")
                         except Exception as e:
-                            print(f"[ERROR] Failed to upload raw image to S3: {e}")
-                            raise Exception(f"Failed to upload raw image to S3: {str(e)}")
+                            logger.error(f"Failed to upload raw image to S3: {e}")
+                            raise Exception(f"Failed to upload raw image to S3: {e!s}")
                         
                         # Step 2: Process through generate_avatar (like frontend does)
                         from .services.avatar import download
@@ -475,15 +482,15 @@ class BotAdmin(BaseAdmin):
                             processed_image = download("uploads", raw_filename)
                             if not processed_image:
                                 raise Exception(f"Failed to download image from S3: {raw_image_key}")
-                            print(f"[DEBUG] Successfully downloaded image from S3: {raw_image_key}")
+                            logger.debug(f"Successfully downloaded image from S3: {raw_image_key}")
                         except Exception as e:
-                            print(f"[ERROR] Failed to download image from S3: {e}")
+                            logger.error(f"Failed to download image from S3: {e}")
                             # Clean up raw image on failure
                             s3.delete_object(
                                 Bucket=os.getenv("AWS_BUCKET_NAME"),
                                 Key=raw_image_key,
                             )
-                            raise Exception(f"Failed to download image from S3: {str(e)}")
+                            raise Exception(f"Failed to download image from S3: {e!s}")
                         
                         if processed_image:
                             image = generate_avatar(
@@ -491,7 +498,7 @@ class BotAdmin(BaseAdmin):
                                 obj.name,
                                 obj.avatar_type,
                             )
-                            image_key = image.name if hasattr(image, 'name') else f"{obj.name}_{int(time.time())}.png"
+                            image_key = image.name if hasattr(image, "name") else f"{obj.name}_{int(time.time())}.png"
                             
                             if image and image_key:
                                 try:
@@ -534,7 +541,7 @@ class BotAdmin(BaseAdmin):
                                     )
                                     self.message_user(
                                         request,
-                                        f"Failed to upload avatar to S3: {str(e)}",
+                                        f"Failed to upload avatar to S3: {e!s}",
                                         level="ERROR",
                                     )
                             else:

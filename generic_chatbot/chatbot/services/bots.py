@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
@@ -7,6 +8,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 from ..models import Avatar, Bot
 from .s3_helper import delete
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -29,7 +33,7 @@ class ListBotsAPIView(View):
             )
             return JsonResponse({"bots": list(bots)}, status=200)
         except Exception as e:
-            print(f"Error in ListBotsAPIView GET: {e}")
+            logger.error(f"Error in ListBotsAPIView GET: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     def post(self, request, *args, **kwargs):
@@ -69,7 +73,7 @@ class ListBotsAPIView(View):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON payload."}, status=400)
         except Exception as e:
-            print(f"Error in ListBotsAPIView POST: {e}")
+            logger.error(f"Error in ListBotsAPIView POST: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -97,7 +101,7 @@ class BotDetailAPIView(View):
         except Bot.DoesNotExist:
             return JsonResponse({"error": "Bot not found"}, status=404)
         except Exception as e:
-            print(f"Error in BotDetailAPIView GET: {e}")
+            logger.error(f"Error in BotDetailAPIView GET: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     def put(self, request, pk, *args, **kwargs):
@@ -120,7 +124,7 @@ class BotDetailAPIView(View):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON payload."}, status=400)
         except Exception as e:
-            print(f"Error in BotDetailAPIView PUT: {e}")
+            logger.error(f"Error in BotDetailAPIView PUT: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     def delete(self, request, pk, *args, **kwargs):
@@ -133,11 +137,11 @@ class BotDetailAPIView(View):
                         delete("avatar", avatar.image_path)
                 avatars.delete()
             except Exception:
-                print("[ERROR] failed to delete S3 images")
+                logger.error("[ERROR] failed to delete S3 images")
             bot.delete()
             return JsonResponse({"message": "Bot deleted successfully."}, status=204)
         except Bot.DoesNotExist:
             return JsonResponse({"error": "Bot not found"}, status=404)
         except Exception as e:
-            print(f"Error in BotDetailAPIView DELETE: {e}")
+            logger.error(f"Error in BotDetailAPIView DELETE: {e}")
             return JsonResponse({"error": str(e)}, status=500)
