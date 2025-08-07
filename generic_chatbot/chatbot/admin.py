@@ -76,8 +76,8 @@ class BotAdminForm(forms.ModelForm):
                         if os.path.exists(local_path):
                             image_url = f"/media/avatars/{avatar.chatbot_avatar}"
                             self.fields["avatar_image"].help_text = format_html(
-                                '<div><strong>Current Avatar:</strong><br>'
-                                '<img src="{}" alt="Current Avatar" /><br>'
+                                '<div class="current-avatar-section"><strong>Current Avatar:</strong><br>'
+                                '<img src="{}" alt="Current Avatar" class="current-avatar" /><br>'
                                 '<small>{}</small></div>',
                                 image_url, avatar.chatbot_avatar
                             )
@@ -88,8 +88,8 @@ class BotAdminForm(forms.ModelForm):
                         image_url = get_presigned_url("avatar", avatar.chatbot_avatar, expiration=3600)
                         if image_url:
                             self.fields["avatar_image"].help_text = format_html(
-                                '<div><strong>Current Avatar:</strong><br>'
-                                '<img src="{}" alt="Current Avatar" /><br>'
+                                '<div class="current-avatar-section"><strong>Current Avatar:</strong><br>'
+                                '<img src="{}" alt="Current Avatar" class="current-avatar" /><br>'
                                 '<small>{}</small></div>',
                                 image_url, avatar.chatbot_avatar
                             )
@@ -279,20 +279,20 @@ class BotAdmin(BaseAdmin):
                     if os.path.exists(local_path):
                         image_url = f"/media/avatars/{avatar.chatbot_avatar}"
                         return format_html(
-                            '<img src="{}" alt="Avatar" />',
-                            image_url,
+                            '<img src="{}" alt="Avatar" class="avatar-preview" title="{}" />',
+                            image_url, avatar.chatbot_avatar
                         )
                 else:
                     # Production: Get presigned URL for display
                     image_url = get_presigned_url("avatar", avatar.chatbot_avatar, expiration=3600)
                     if image_url:
                         return format_html(
-                            '<img src="{}" alt="Avatar" />',
-                            image_url,
+                            '<img src="{}" alt="Avatar" class="avatar-preview" title="{}" />',
+                            image_url, avatar.chatbot_avatar
                         )
         except Exception:
             pass
-        return format_html('<span>No avatar</span>')
+        return format_html('<span class="no-avatar">No avatar</span>')
     avatar_preview.short_description = "Avatar"
 
     fieldsets = (
@@ -579,7 +579,7 @@ class AvatarAdmin(BaseAdmin):
                     if os.path.exists(local_path):
                         image_url = f"/media/avatars/{obj.chatbot_avatar}"
                         return format_html(
-                            '<img src="{}" alt="Chatbot Avatar" title="{}" />',
+                            '<img src="{}" alt="Chatbot Avatar" class="avatar-preview" title="{}" />',
                             image_url, obj.chatbot_avatar,
                         )
                 else:
@@ -587,12 +587,12 @@ class AvatarAdmin(BaseAdmin):
                     image_url = get_presigned_url("avatar", obj.chatbot_avatar, expiration=3600)
                     if image_url:
                         return format_html(
-                            '<img src="{}" alt="Chatbot Avatar" title="{}" />',
+                            '<img src="{}" alt="Chatbot Avatar" class="avatar-preview" title="{}" />',
                             image_url, obj.chatbot_avatar,
                         )
             except Exception:
                 pass
-        return format_html('<span>No chatbot avatar</span>')
+        return format_html('<span class="no-avatar">No chatbot avatar</span>')
     avatar_preview.short_description = "Chatbot Avatar"
     
     def avatar_preview_field(self, obj):
@@ -604,12 +604,12 @@ class AvatarAdmin(BaseAdmin):
                 participant_url = get_presigned_url("avatar", obj.participant_avatar, expiration=3600)
                 if participant_url:
                     html_parts.append(
-                        f'<div><strong>Participant Avatar:</strong><br>'
-                        f'<img src="{participant_url}" alt="Participant Avatar" /><br>'
+                        f'<div class="avatar-detail-section"><strong>Participant Avatar:</strong><br>'
+                        f'<img src="{participant_url}" alt="Participant Avatar" class="avatar-detail" /><br>'
                         f'<small>{obj.participant_avatar}</small></div>',
                     )
             except Exception:
-                html_parts.append("<div><strong>Participant Avatar:</strong> Error loading image</div>")
+                html_parts.append("<div class='avatar-detail-section'><strong>Participant Avatar:</strong> Error loading image</div>")
         
         if obj.chatbot_avatar:
             try:
@@ -624,28 +624,28 @@ class AvatarAdmin(BaseAdmin):
                     if os.path.exists(local_path):
                         chatbot_url = f"/media/avatars/{obj.chatbot_avatar}"
                         html_parts.append(
-                            f'<div><strong>Chatbot Avatar:</strong><br>'
-                            f'<img src="{chatbot_url}" alt="Chatbot Avatar" /><br>'
+                            f'<div class="avatar-detail-section"><strong>Chatbot Avatar:</strong><br>'
+                            f'<img src="{chatbot_url}" alt="Chatbot Avatar" class="avatar-detail" /><br>'
                             f'<small>{obj.chatbot_avatar}</small></div>',
                         )
                     else:
-                        html_parts.append("<div><strong>Chatbot Avatar:</strong> File not found</div>")
+                        html_parts.append("<div class='avatar-detail-section'><strong>Chatbot Avatar:</strong> File not found</div>")
                 else:
                     # Production: Get presigned URL for display
                     chatbot_url = get_presigned_url("avatar", obj.chatbot_avatar, expiration=3600)
                     if chatbot_url:
                         html_parts.append(
-                            f'<div><strong>Chatbot Avatar:</strong><br>'
-                            f'<img src="{chatbot_url}" alt="Chatbot Avatar" /><br>'
+                            f'<div class="avatar-detail-section"><strong>Chatbot Avatar:</strong><br>'
+                            f'<img src="{chatbot_url}" alt="Chatbot Avatar" class="avatar-detail" /><br>'
                             f'<small>{obj.chatbot_avatar}</small></div>',
                         )
                     else:
-                        html_parts.append("<div><strong>Chatbot Avatar:</strong> Error loading image</div>")
+                        html_parts.append("<div class='avatar-detail-section'><strong>Chatbot Avatar:</strong> Error loading image</div>")
             except Exception:
-                html_parts.append("<div><strong>Chatbot Avatar:</strong> Error loading image</div>")
+                html_parts.append("<div class='avatar-detail-section'><strong>Chatbot Avatar:</strong> Error loading image</div>")
         
         if not html_parts:
-            return format_html('<span>No avatars available</span>')
+            return format_html('<span class="no-avatar">No avatars available</span>')
         
         return format_html("".join(html_parts))
     avatar_preview_field.short_description = "Avatar Images"
