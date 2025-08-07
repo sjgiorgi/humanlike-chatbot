@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     build-essential \
     netcat-openbsd \
+    nginx \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -27,15 +28,15 @@ RUN pipenv install --deploy --system
 # Copy the application code into the container
 COPY . /app
 
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Expose the application's port
-EXPOSE 8000
+EXPOSE 8000 80
 
 # Set the entrypoint
 RUN chmod +x /app/entrypoint.sh
 ENTRYPOINT ["/app/entrypoint.sh"]
 
-# Command to run the application
-CMD ["gunicorn", "generic_chatbot.wsgi:application", \
-     "--bind", "0.0.0.0:8000", \
-     "--workers", "5", "--timeout", "180"]
+# Command to run the application with nginx
+CMD ["sh", "-c", "service nginx start && gunicorn generic_chatbot.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300"]
