@@ -1,204 +1,36 @@
-/* Minimal Admin CSS - Aggressively Remove Unwanted Styling */
+/* Minimal Functional CSS - Django Defaults Only */
 
-/* ===== RESET ALL CUSTOM STYLING ===== */
-/* Remove all background colors, borders, and fancy effects */
-#result_list *,
-#changelist *,
-.field-utterance_count *,
-.field-conversation_link *,
-.field-text_preview *,
-.field-total_session_time *,
-.field-deprecation_warning *,
-.field-avatar_preview *,
-.field-avatar_preview_field * {
-    background: inherit !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
-    transition: none !important;
-}
+/* ===== FUNCTIONAL REQUIREMENTS ONLY ===== */
 
-/* ===== BASIC LINK STYLING ===== */
-/* Make links clearly clickable with Django's default styling */
+/* 1. Make links clearly clickable */
 .field-utterance_count .utterance-link,
 .field-conversation_link .conversation-link {
-    color: var(--link-fg) !important;
-    text-decoration: underline !important;
-    font-weight: normal !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    transform: none !important;
+    text-decoration: underline;
 }
 
-.field-utterance_count .utterance-link:hover,
-.field-conversation_link .conversation-link:hover {
-    color: var(--link-hover-color) !important;
-    text-decoration: underline !important;
-    background: transparent !important;
-    border: none !important;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-/* ===== MESSAGE PREVIEW - REMOVE ALL BOXING ===== */
+/* 2. Prevent text overflow in message column */
 .field-text_preview .message-preview {
-    max-width: 300px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    display: block !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    transform: none !important;
-    color: var(--body-fg) !important;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
 }
 
-/* Remove all styling from user/bot messages */
-.field-text_preview .user-message,
-.field-text_preview .bot-message {
-    background: transparent !important;
-    border: none !important;
-    color: var(--body-fg) !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-}
-
-/* ===== TABLE CELLS - REMOVE WHITE BACKGROUNDS ===== */
+/* 3. Prevent text overflow in table cells */
 #result_list td,
 #changelist table td {
-    background: var(--body-bg) !important;
-    border: none !important;
-    padding: inherit !important;
-    margin: 0 !important;
-    max-width: 300px !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
+    max-width: 300px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-#result_list th,
-#changelist table th {
-    background: var(--darkened-bg) !important;
-    border: none !important;
-    color: var(--body-fg) !important;
-}
-
-/* ===== TABLE ROWS - REMOVE HOVER EFFECTS ===== */
-#result_list tbody tr,
-#changelist table tbody tr {
-    background: var(--body-bg) !important;
-    border: none !important;
-}
-
-#result_list tbody tr:hover,
-#changelist table tbody tr:hover {
-    background: var(--darkened-bg) !important;
-}
-
-/* ===== EMPTY STATES ===== */
-.field-utterance_count .no-utterances,
-.field-conversation_link .no-conversation {
-    color: var(--body-quiet-color) !important;
-    font-style: italic !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* ===== SESSION TIME ===== */
-.field-total_session_time .session-time {
-    font-weight: normal !important;
-    color: var(--body-fg) !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* ===== DEPRECATION WARNING ===== */
-.field-deprecation_warning span {
-    color: var(--error-fg) !important;
-    font-weight: bold !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* ===== AVATAR PREVIEW ===== */
+/* 4. Avatar previews - small bounded circles */
 .field-avatar_preview img,
 .field-avatar_preview_field img {
-    border: 1px solid var(--border-color) !important;
-    max-width: 100px !important;
-    max-height: 100px !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    transform: none !important;
-    border-radius: 0 !important;
-}
-
-/* ===== FORM ROWS ===== */
-.form-row {
-    margin-bottom: 15px !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: inherit !important;
-}
-
-/* ===== MODULES ===== */
-.module {
-    background: var(--body-bg) !important;
-    border: 1px solid var(--hairline-color) !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-}
-
-.module h2, .module caption {
-    background: var(--secondary) !important;
-    color: var(--primary-fg) !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-}
-
-/* ===== REMOVE ALL CUSTOM CLASSES ===== */
-/* Ensure no custom classes add unwanted styling */
-.admin-interface,
-.enhanced-form-row,
-.enhanced-pagination,
-.admin-table {
-    background: inherit !important;
-    border: none !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-/* ===== FORCE DJANGO DEFAULTS ===== */
-/* Override any remaining custom styling */
-#result_list,
-#changelist {
-    background: var(--body-bg) !important;
-    border: 1px solid var(--hairline-color) !important;
-    box-shadow: none !important;
-}
-
-/* Ensure text doesn't overflow in a fancy way */
-#result_list td *,
-#changelist table td * {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #ccc;
 } 
