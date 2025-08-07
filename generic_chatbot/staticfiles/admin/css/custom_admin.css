@@ -415,4 +415,65 @@ input[type="file"]:focus {
     background-color: #f8d7da;
     border-color: #f5c6cb;
     color: #721c24;
+}
+
+/* ===== FIXES FOR PRODUCTION ISSUES ===== */
+/* Ensure proper table styling in production */
+#changelist table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+#changelist table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: #495057;
+    text-align: left;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#changelist table tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: top;
+    font-size: 14px;
+    line-height: 1.5;
+    background: white;
+}
+
+#changelist table tbody tr:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+/* Fix for text overflow issues */
+#changelist table tbody td {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 300px;
+}
+
+/* Ensure proper form styling */
+.form-row {
+    background: white;
+    border: none;
+    margin-bottom: 20px;
+    padding: 16px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Fix for module styling */
+.module {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 } 

@@ -26,7 +26,8 @@ db.sqlite3
 /media/
 media/
 */media/
-/staticfiles/
+# Keep staticfiles for production deployment
+# /staticfiles/
 
 # Environment Files
 .env
