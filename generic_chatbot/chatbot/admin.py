@@ -116,7 +116,6 @@ class BaseAdmin(admin.ModelAdmin):
         css = {
             "all": ("admin/css/custom_admin.css",),
         }
-        js = ("admin/js/custom_admin.js",)
     
     def get_list_display(self, request):
         """Add custom styling to list display"""
