@@ -1,75 +1,139 @@
 /* Minimal Admin CSS - Respects Django's Original Design */
 
 /* ===== BASIC FUNCTIONALITY ===== */
-/* Make links clearly clickable */
-.field-utterance_count .utterance-link,
-.field-conversation_link .conversation-link {
-    color: var(--link-fg);
-    text-decoration: underline;
-    font-weight: normal;
+/* Make links clearly clickable - with high specificity */
+#result_list .field-utterance_count .utterance-link,
+#changelist .field-utterance_count .utterance-link,
+#result_list .field-conversation_link .conversation-link,
+#changelist .field-conversation_link .conversation-link {
+    color: var(--link-fg) !important;
+    text-decoration: underline !important;
+    font-weight: normal !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
-.field-utterance_count .utterance-link:hover,
-.field-conversation_link .conversation-link:hover {
-    color: var(--link-hover-color);
-    text-decoration: underline;
+#result_list .field-utterance_count .utterance-link:hover,
+#changelist .field-utterance_count .utterance-link:hover,
+#result_list .field-conversation_link .conversation-link:hover,
+#changelist .field-conversation_link .conversation-link:hover {
+    color: var(--link-hover-color) !important;
+    text-decoration: underline !important;
+    background: none !important;
+    border: none !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 /* Empty state styling */
 .field-utterance_count .no-utterances,
 .field-conversation_link .no-conversation {
-    color: var(--body-quiet-color);
-    font-style: italic;
+    color: var(--body-quiet-color) !important;
+    font-style: italic !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 /* ===== MESSAGE PREVIEW ===== */
 .field-text_preview .message-preview {
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: block;
+    max-width: 300px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Remove any fancy styling from message previews */
+.field-text_preview .user-message,
+.field-text_preview .bot-message {
+    background: none !important;
+    border: none !important;
+    color: var(--body-fg) !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 /* ===== SESSION TIME ===== */
 .field-total_session_time .session-time {
-    font-weight: normal;
-    color: var(--body-fg);
+    font-weight: normal !important;
+    color: var(--body-fg) !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 /* ===== DEPRECATION WARNING ===== */
 .field-deprecation_warning span {
-    color: var(--error-fg);
-    font-weight: bold;
+    color: var(--error-fg) !important;
+    font-weight: bold !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 /* ===== AVATAR PREVIEW ===== */
 .field-avatar_preview img,
 .field-avatar_preview_field img {
-    border: 1px solid var(--border-color);
-    max-width: 100px;
-    max-height: 100px;
+    border: 1px solid var(--border-color) !important;
+    max-width: 100px !important;
+    max-height: 100px !important;
+    background: none !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 /* ===== RESPONSIVE TEXT ===== */
 /* Prevent text overflow in table cells */
 #result_list td,
 #changelist table td {
-    max-width: 300px;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+    max-width: 300px !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    background: var(--body-bg) !important;
 }
 
 /* ===== MINIMAL ENHANCEMENTS ===== */
 /* Subtle hover effect on table rows */
 #result_list tbody tr:hover,
 #changelist table tbody tr:hover {
-    background-color: var(--darkened-bg);
+    background-color: var(--darkened-bg) !important;
 }
 
 /* Ensure proper spacing */
 .form-row {
-    margin-bottom: 15px;
+    margin-bottom: 15px !important;
+    background: var(--body-bg) !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Remove any fancy styling from modules */
+.module {
+    background: var(--body-bg) !important;
+    border: 1px solid var(--hairline-color) !important;
+    box-shadow: none !important;
+}
+
+/* Remove any fancy styling from module headers */
+.module h2, .module caption {
+    background: var(--secondary) !important;
+    color: var(--primary-fg) !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 /* Keep Django's original styling for everything else */ 
