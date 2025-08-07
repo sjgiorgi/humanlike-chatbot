@@ -8,7 +8,7 @@ import io
 import uuid
 from PIL import Image
 
-from .models import Avatar, Bot, Control, Conversation, Keystroke, Utterance
+from .models import Avatar, Bot, Control, Conversation, Keystroke, Utterance, Persona
 from .services.avatar import generate_avatar
 from .services.s3_helper import delete, get_presigned_url, upload
 
@@ -141,6 +141,45 @@ class ControlAdmin(BaseAdmin):
     deprecation_warning.short_description = "Status"
 
 
+@admin.register(Persona)
+class PersonaAdmin(BaseAdmin):
+    list_display = (
+        "name",
+        "instructions_preview",
+        "bot_count",
+        "created_at",
+        "updated_at",
+    )
+    list_display_links = ("name",)
+    search_fields = ("name", "instructions")
+    list_filter = ("created_at", "updated_at")
+    ordering = ("name",)
+    list_per_page = 25
+    
+    def instructions_preview(self, obj):
+        preview = obj.instructions[:100] + "..." if len(obj.instructions) > 100 else obj.instructions
+        return format_html('<span class="instructions-preview" title="{}">{}</span>', obj.instructions, preview)
+    instructions_preview.short_description = "Instructions"
+    
+    def bot_count(self, obj):
+        count = obj.bots.count()
+        if count > 0:
+            url = reverse("admin:chatbot_bot_changelist") + f"?personas__id__exact={obj.id}"
+            return format_html('<a href="{}" class="bot-link">{} bots</a>', url, count)
+        return format_html('<span class="no-bots">0 bots</span>')
+    bot_count.short_description = "Assigned Bots"
+
+    fieldsets = (
+        ("Basic Information", {
+            "fields": ("name",),
+        }),
+        ("Instructions", {
+            "fields": ("instructions",),
+            "description": "Define the personality, behavior, and characteristics for this persona",
+        }),
+    )
+
+
 @admin.register(Conversation)
 class ConversationAdmin(BaseAdmin):
     list_display = (
@@ -250,12 +289,18 @@ class BotAdmin(BaseAdmin):
         "avatar_type",
         "has_initial_utterance",
         "chunk_messages",
+        "get_persona_count",
         "avatar_preview",
     )
     list_display_links = ("name",)
     search_fields = ("name", "model_type", "model_id")
-    list_filter = ("model_type", "avatar_type", "chunk_messages")
+    list_filter = ("model_type", "avatar_type", "chunk_messages", "personas")
     ordering = ("name",)
+    filter_horizontal = ["personas"]
+    
+    def get_persona_count(self, obj):
+        return obj.personas.count()
+    get_persona_count.short_description = 'Personas Count'
     
     def has_initial_utterance(self, obj):
         return bool(obj.initial_utterance and obj.initial_utterance.strip())
@@ -301,6 +346,10 @@ class BotAdmin(BaseAdmin):
         }),
         ("Configuration", {
             "fields": ("prompt", "initial_utterance", "avatar_type"),
+        }),
+        ("Personas", {
+            "fields": ("personas",),
+            "description": "Select the personas this bot should embody. You can select multiple personas.",
         }),
         ("Avatar Settings", {
             "fields": ("avatar_image", "remove_avatar"),
