@@ -30,3 +30,4 @@ boto3 = "*"
 python_version = "3.11"
 
 [dev-packages]
+ruff = "*"
