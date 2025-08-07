@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize S3 client
 try:
-    if os.getenv("BACKEND_ENVIRONMENT") == "development":
+    if os.getenv("BACKEND_ENVIRONMENT") == "local":
         # For local development, use explicit credentials
         aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
         aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
