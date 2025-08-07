@@ -1,9 +1,9 @@
-from nltk.tokenize import sent_tokenize
-import nltk
-import re
 from typing import List
 
-nltk.download('punkt_tab')
+import nltk
+from nltk.tokenize import sent_tokenize
+
+nltk.download("punkt_tab")
 
 
 # Make sure you’ve run: python -m nltk.downloader punkt

@@ -1,5 +1,6 @@
-from django.utils.deprecation import MiddlewareMixin
 from django.conf import settings
+from django.utils.deprecation import MiddlewareMixin
+
 
 class XFrameOptionsMiddleware(MiddlewareMixin):
     def process_response(self, request, response):

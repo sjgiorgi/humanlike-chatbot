@@ -1,12 +1,15 @@
 import json
-from django.views import View
+
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from ..models import Bot, Avatar
+
+from ..models import Avatar, Bot
 from .s3_helper import delete
 
-@method_decorator(csrf_exempt, name='dispatch')
+
+@method_decorator(csrf_exempt, name="dispatch")
 class ListBotsAPIView(View):
     """
     GET  -> List all bots
@@ -15,7 +18,15 @@ class ListBotsAPIView(View):
 
     def get(self, request, *args, **kwargs):
         try:
-            bots = Bot.objects.values("id", "name", "model_type", "model_id", "prompt", "initial_utterance", "avatar_type")
+            bots = Bot.objects.values(
+                "id",
+                "name",
+                "model_type",
+                "model_id",
+                "prompt",
+                "initial_utterance",
+                "avatar_type",
+            )
             return JsonResponse({"bots": list(bots)}, status=200)
         except Exception as e:
             print(f"Error in ListBotsAPIView GET: {e}")
@@ -40,7 +51,7 @@ class ListBotsAPIView(View):
                 model_id=model_id,
                 prompt=prompt,
                 initial_utterance=initial_utterance,
-                avatar_type=avatar_type
+                avatar_type=avatar_type,
             )
 
             return JsonResponse(
@@ -53,7 +64,7 @@ class ListBotsAPIView(View):
                     "initial_utterance": bot.initial_utterance,
                     "avatar_type": bot.avatar_type,
                 },
-                status=201
+                status=201,
             )
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON payload."}, status=400)
@@ -62,7 +73,7 @@ class ListBotsAPIView(View):
             return JsonResponse({"error": str(e)}, status=500)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_exempt, name="dispatch")
 class BotDetailAPIView(View):
     """
     GET    -> Retrieve single bot by ID
@@ -119,10 +130,10 @@ class BotDetailAPIView(View):
                 avatars = Avatar.objects.filter(bot=bot)
                 for avatar in avatars:
                     if avatar.image_path:
-                        delete('avatar', avatar.image_path)
+                        delete("avatar", avatar.image_path)
                 avatars.delete()
-            except:
-                print(f'[ERROR] failed to delete S3 images')
+            except Exception:
+                print("[ERROR] failed to delete S3 images")
             bot.delete()
             return JsonResponse({"message": "Bot deleted successfully."}, status=204)
         except Bot.DoesNotExist:

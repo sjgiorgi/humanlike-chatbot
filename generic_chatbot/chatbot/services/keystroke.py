@@ -1,11 +1,15 @@
+import json
+import logging
+from datetime import datetime
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import json, logging
+
 from ..models import Keystroke
-from datetime import datetime
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
 
 @csrf_exempt  # Disable CSRF for testing; use authentication in production
 def update_keystrokes(request):
@@ -17,10 +21,17 @@ def update_keystrokes(request):
             total_time_on_page = data.get("total_time_on_page")
             total_time_away_from_page = data.get("total_time_away_from_page")
             keystroke_count = data.get("keystroke_count")
-            timestamp = data.get("timestamp")  # Optional: only needed if you're passing this in explicitly
+            timestamp = data.get(
+                "timestamp",
+            )  # Optional: only needed if you're passing this in explicitly
 
             # Validate required fields
-            if conversation_id is None or total_time_on_page is None or total_time_away_from_page is None or keystroke_count is None:
+            if (
+                conversation_id is None
+                or total_time_on_page is None
+                or total_time_away_from_page is None
+                or keystroke_count is None
+            ):
                 return JsonResponse({"error": "Missing required fields"}, status=400)
 
             # Parse timestamp if provided, else use current time
@@ -28,7 +39,9 @@ def update_keystrokes(request):
                 try:
                     timestamp = datetime.fromisoformat(timestamp)
                 except ValueError:
-                    return JsonResponse({"error": "Invalid timestamp format. Use ISO 8601."}, status=400)
+                    return JsonResponse(
+                        {"error": "Invalid timestamp format. Use ISO 8601."}, status=400,
+                    )
             else:
                 timestamp = datetime.now()
 
@@ -38,13 +51,15 @@ def update_keystrokes(request):
                 total_time_on_page=total_time_on_page,
                 total_time_away_from_page=total_time_away_from_page,
                 keystroke_count=keystroke_count,
-                timestamp=timestamp
+                timestamp=timestamp,
             )
 
-            return JsonResponse({
-                "message": "Keystroke data saved",
-                "keystroke_id": keystroke.id
-            })
+            return JsonResponse(
+                {
+                    "message": "Keystroke data saved",
+                    "keystroke_id": keystroke.id,
+                },
+            )
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON format"}, status=400)

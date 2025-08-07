@@ -1,37 +1,40 @@
 import json
-from pathlib import Path
 import os
-from dotenv import load_dotenv
+from pathlib import Path
+
 import requests
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load .env file
 ROOT_DIR = BASE_DIR.parent
-dotenv_path = os.path.join(ROOT_DIR, '.env')
+dotenv_path = os.path.join(ROOT_DIR, ".env")
 load_dotenv(dotenv_path)
 
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', '!g8ik7!xk!9xyldg+r75$^@tdt+d')
+SECRET_KEY = os.getenv("SECRET_KEY", "!g8ik7!xk!9xyldg+r75$^@tdt+d")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ["*"]
 
 if DEBUG:
-    REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379')
+    REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
 if not DEBUG:
     REDIS_URL = os.getenv(
-        'REDIS_URL', 'rediss://humanlikebotcache-5rqgxm.serverless.use1.cache.amazonaws.com:6379')
+        "REDIS_URL",
+        "rediss://humanlikebotcache-5rqgxm.serverless.use1.cache.amazonaws.com:6379",
+    )
 
 CACHES = {
     "default": {
@@ -40,16 +43,20 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
-    }
+    },
 }
 
 # Append Elastic Beanstalk Load Balancer Health Check requests since the source host IP address keeps changing
 if not DEBUG:
     try:
-        token = requests.put('http://169.254.169.254/latest/api/token',
-                             headers={'X-aws-ec2-metadata-token-ttl-seconds': '60'}).text
-        internal_ip = requests.get('http://169.254.169.254/latest/meta-data/local-ipv4',
-                                   headers={'X-aws-ec2-metadata-token': token}).text
+        token = requests.put(
+            "http://169.254.169.254/latest/api/token",
+            headers={"X-aws-ec2-metadata-token-ttl-seconds": "60"},
+        ).text
+        internal_ip = requests.get(
+            "http://169.254.169.254/latest/meta-data/local-ipv4",
+            headers={"X-aws-ec2-metadata-token": token},
+        ).text
     except requests.exceptions.ConnectionError:
         pass
     else:
@@ -114,13 +121,13 @@ MODERATION_VALUES_FOR_BLOCKED = json.loads(
             "violence": 0.7,
             "violence/graphic": 0.8
         }""",
-    )
+    ),
 )
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR, 'templates'],
+        "DIRS": [BASE_DIR, "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -140,14 +147,14 @@ WSGI_APPLICATION = "generic_chatbot.wsgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST'),
-        'PORT': os.getenv('DATABASE_PORT'),
-    }
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.getenv("DATABASE_NAME"),
+        "USER": os.getenv("DATABASE_USER"),
+        "PASSWORD": os.getenv("DATABASE_PASSWORD"),
+        "HOST": os.getenv("DATABASE_HOST"),
+        "PORT": os.getenv("DATABASE_PORT"),
+    },
 }
 
 
@@ -195,25 +202,25 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-X_FRAME_OPTIONS = 'ALLOWALL'
+X_FRAME_OPTIONS = "ALLOWALL"
 # consider restricting in production
 CORS_ALLOW_ALL_ORIGINS = True
-SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SECURE = True
 
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
     },
 }

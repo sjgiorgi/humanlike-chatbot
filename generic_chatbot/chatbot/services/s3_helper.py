@@ -1,84 +1,132 @@
-import os
 import io
-from PIL import Image
-import boto3
+import os
 import random
 
-if os.getenv("BACKEND_ENVIRONMENT") == "local":
-    s3 = boto3.client(
-        's3',
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv('AWS_REGION'),
-    )
-else:
-    s3 = boto3.client(
-        's3',
-        region_name=os.getenv('AWS_REGION'),
-    )
+import boto3
+from PIL import Image
+
+# Initialize S3 client with proper error handling
+s3 = None
+try:
+    if os.getenv("BACKEND_ENVIRONMENT") == "local":
+        # For local development, check if AWS credentials are available
+        aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+        aws_region = os.getenv("AWS_REGION", "us-east-1")
+        
+        if aws_access_key and aws_secret_key:
+            s3 = boto3.client(
+                "s3",
+                aws_access_key_id=aws_access_key,
+                aws_secret_access_key=aws_secret_key,
+                region_name=aws_region,
+            )
+        else:
+            print("⚠️  AWS credentials not found. S3 functionality will be disabled for local development.")
+            s3 = None
+    else:
+        # For production, use default credential chain
+        s3 = boto3.client("s3", region_name=os.getenv("AWS_REGION", "us-east-1"))
+except Exception as e:
+    print(f"⚠️  Failed to initialize S3 client: {e}")
+    s3 = None
+
 
 def download(prefix, file_path):
+    if not s3:
+        print("⚠️  S3 not available - download operation skipped")
+        return None
+    
     try:
         # Step 1: Download image from S3
-        s3_response = s3.get_object(Bucket=os.getenv("AWS_BUCKET_NAME"), Key=f'{prefix}/{file_path}')
-        image_data = s3_response['Body'].read()
+        s3_response = s3.get_object(
+            Bucket=os.getenv("AWS_BUCKET_NAME"), Key=f"{prefix}/{file_path}",
+        )
+        image_data = s3_response["Body"].read()
 
         # Step 2: Load into PIL (or whatever your processing pipeline uses)
         return Image.open(io.BytesIO(image_data))
-    
+
     except s3.exceptions.NoSuchKey:
         print({"error": "Image not found in S3"})
     except Exception as e:
         print({"error": str(e)})
     return None
 
+
 def upload(data, file_path):
+    if not s3:
+        print("⚠️  S3 not available - upload operation skipped")
+        return None
+    
     try:
         s3.upload_fileobj(
             data,
             os.getenv("AWS_BUCKET_NAME"),
-            f'avatar/{file_path}',
+            f"avatar/{file_path}",
             ExtraArgs={
-                "ContentType": 'PNG',
-                "ACL": "private"  # or 'public-read' if you want it public
-            }
+                "ContentType": "PNG",
+                "ACL": "private",  # or 'public-read' if you want it public
+            },
         )
-        return f'avatar/{file_path}'
+        return f"avatar/{file_path}"
 
     except Exception as e:
-        print(f'[ERROR] {e}')
+        print(f"[ERROR] {e}")
         return None
+
 
 def delete(prefix, file_path):
+    if not s3:
+        print("⚠️  S3 not available - delete operation skipped")
+        return
+    
     try:
-        s3.delete_object(Bucket=os.getenv("AWS_BUCKET_NAME"), Key=f'{prefix}/{file_path}')
+        s3.delete_object(
+            Bucket=os.getenv("AWS_BUCKET_NAME"), Key=f"{prefix}/{file_path}",
+        )
     except Exception as e:
-        print(f'[ERROR] {e}')
-        return None
+        print(f"[ERROR] {e}")
+        return
+
 
 def get_presigned_url(prefix, file_path, expiration=3600):
+    if not s3:
+        print("⚠️  S3 not available - returning dummy URL")
+        return f"https://example.com/{prefix}/{file_path}"
+    
     try:
         url = s3.generate_presigned_url(
-            'get_object',
+            "get_object",
             Params={
-                'Bucket': os.getenv("AWS_BUCKET_NAME"),
-                'Key': f'{prefix}/{file_path}'
+                "Bucket": os.getenv("AWS_BUCKET_NAME"),
+                "Key": f"{prefix}/{file_path}",
             },
-            ExpiresIn=expiration  # seconds
+            ExpiresIn=expiration,  # seconds
         )
         return url
     except Exception as e:
         print("Error generating pre-signed URL:", e)
         return None
 
+
 def get_random_image(prefix, file_path, expiration=3600):
+    if not s3:
+        print("⚠️  S3 not available - returning None for random image")
+        return None
+    
     try:
-        response = s3.list_objects_v2(Bucket=os.getenv("AWS_BUCKET_NAME"), Prefix=prefix)
-        if 'Contents' in response:
-            file_keys = [item['Key'].removeprefix(f"{prefix}/") for item in response['Contents'] if item['Key'].removeprefix(f"{prefix}/") != file_path]
+        response = s3.list_objects_v2(
+            Bucket=os.getenv("AWS_BUCKET_NAME"), Prefix=prefix,
+        )
+        if "Contents" in response:
+            file_keys = [
+                item["Key"].removeprefix(f"{prefix}/")
+                for item in response["Contents"]
+                if item["Key"].removeprefix(f"{prefix}/") != file_path
+            ]
             return random.choice(file_keys)
-        else:
-            return None
+        return None
     except Exception as e:
         print("Error generating pre-signed URL:", e)
         return None
