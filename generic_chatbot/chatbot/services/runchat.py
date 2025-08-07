@@ -8,6 +8,37 @@ from ..models import Bot, Conversation, Utterance
 from .moderation import moderate_message
 
 
+def generate_system_prompt(bot, selected_persona=None):
+    """
+    Generate a dynamic system prompt by combining the bot's base prompt 
+    with instructions from the selected persona for this conversation.
+    
+    Args:
+        bot: Bot instance with prompt
+        selected_persona: Persona instance selected for this conversation (can be None)
+        
+    Returns:
+        str: Combined system prompt
+    """
+    try:
+        # Start with the bot's base prompt
+        system_prompt = bot.prompt.strip() if bot.prompt else ""
+        
+        # Add selected persona instructions if available
+        if selected_persona and hasattr(selected_persona, 'name') and hasattr(selected_persona, 'instructions'):
+            # Combine base prompt with persona instructions
+            if system_prompt:
+                system_prompt += "\n\n"
+            
+            system_prompt += f"Additional personality instructions:\nPersona '{selected_persona.name}': {selected_persona.instructions}"
+        
+        return system_prompt
+    except Exception as e:
+        print(f"❌ Error generating system prompt: {e}")
+        # Fallback to just the bot's prompt
+        return bot.prompt.strip() if bot.prompt else ""
+
+
 async def save_chat_to_db(
     conversation_id, speaker_id, text, bot_name=None, participant_id=None,
 ):
@@ -42,8 +73,8 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     Returns the bot response text.
     """
     engine_instances = {}
-    # Fetch bot object
-    bot = await sync_to_async(Bot.objects.get)(name=bot_name)
+    # Fetch bot object with personas prefetched
+    bot = await sync_to_async(Bot.objects.prefetch_related('personas').get)(name=bot_name)
 
     # Moderate incoming message
     # Run in thread to avoid blocking
@@ -102,9 +133,22 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
         for msg in conversation_history
     ]
 
+    # Get the selected persona for this conversation
+    conversation = await sync_to_async(Conversation.objects.select_related('selected_persona').get)(conversation_id=conversation_id)
+    selected_persona = conversation.selected_persona
+    
+    # Generate dynamic system prompt combining bot prompt with selected persona
+    system_prompt = generate_system_prompt(bot, selected_persona)
+    
+    # Log the generated prompt for debugging
+    print(f"🤖 Bot '{bot.name}' system prompt:")
+    print(f"   Base prompt: {bot.prompt[:100] if bot.prompt else 'None'}...")
+    print(f"   Selected persona: {selected_persona.name if selected_persona and hasattr(selected_persona, 'name') else 'None'}")
+    print(f"   Final prompt length: {len(system_prompt)} characters")
+
     # Run Kani
     engine = get_or_create_engine(bot.model_type, bot.model_id, engine_instances)
-    kani = Kani(engine, system_prompt=bot.prompt, chat_history=formatted_history)
+    kani = Kani(engine, system_prompt=system_prompt, chat_history=formatted_history)
 
     latest_user_message = formatted_history[-1].content
     response_text = ""
