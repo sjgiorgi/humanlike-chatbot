@@ -1,16 +1,18 @@
 import io
+import logging
 import os
 import random
 
 import boto3
-from django.conf import settings
 from PIL import Image
 
-# Initialize S3 client with proper error handling
-s3 = None
+# Get logger for this module
+logger = logging.getLogger(__name__)
+
+# Initialize S3 client
 try:
-    if settings.BACKEND_ENVIRONMENT == "local":
-        # For local development, check if AWS credentials are available
+    if os.getenv("BACKEND_ENVIRONMENT") == "development":
+        # For local development, use explicit credentials
         aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
         aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
         aws_region = os.getenv("AWS_REGION", "us-east-1")
@@ -23,44 +25,44 @@ try:
                 region_name=aws_region,
             )
         else:
-            print("⚠️  AWS credentials not found. S3 functionality will be disabled for local development.")
+            logger.warning("AWS credentials not found. S3 functionality will be disabled for local development.")
             s3 = None
     else:
         # For production, use default credential chain
         s3 = boto3.client("s3", region_name=os.getenv("AWS_REGION", "us-east-1"))
 except Exception as e:
-    print(f"⚠️  Failed to initialize S3 client: {e}")
+    logger.warning(f"Failed to initialize S3 client: {e}")
     s3 = None
 
 
 def download(prefix, file_path):
     if not s3:
-        print("⚠️  S3 not available - download operation skipped")
+        logger.warning("S3 not available - download operation skipped")
         return None
     
     try:
         # Step 1: Download image from S3
         s3_key = f"{prefix}/{file_path}"
-        print(f"[DEBUG] Attempting to download from S3: {s3_key}")
+        logger.debug(f"Attempting to download from S3: {s3_key}")
         s3_response = s3.get_object(
             Bucket=os.getenv("AWS_BUCKET_NAME"), Key=s3_key,
         )
         image_data = s3_response["Body"].read()
-        print(f"[DEBUG] Successfully downloaded {len(image_data)} bytes from S3")
+        logger.debug(f"Successfully downloaded {len(image_data)} bytes from S3")
 
         # Step 2: Load into PIL (or whatever your processing pipeline uses)
         return Image.open(io.BytesIO(image_data))
 
     except s3.exceptions.NoSuchKey:
-        print(f"[ERROR] Image not found in S3: {prefix}/{file_path}")
+        logger.error(f"Image not found in S3: {prefix}/{file_path}")
     except Exception as e:
-        print(f"[ERROR] Download failed: {str(e)}")
+        logger.error(f"Download failed: {e!s}")
     return None
 
 
 def upload(data, file_path):
     if not s3:
-        print("⚠️  S3 not available - upload operation skipped")
+        logger.warning("S3 not available - upload operation skipped")
         return None
     
     try:
@@ -71,7 +73,7 @@ def upload(data, file_path):
             s3_key = f"avatar/{file_path}"
         
         # Ensure the data is at the beginning
-        if hasattr(data, 'seek'):
+        if hasattr(data, "seek"):
             data.seek(0)
         
         s3.upload_fileobj(
@@ -86,13 +88,13 @@ def upload(data, file_path):
         return s3_key
 
     except Exception as e:
-        print(f"[ERROR] S3 upload failed: {e}")
+        logger.error(f"S3 upload failed: {e}")
         return None
 
 
 def delete(prefix, file_path):
     if not s3:
-        print("⚠️  S3 not available - delete operation skipped")
+        logger.warning("S3 not available - delete operation skipped")
         return
     
     try:
@@ -106,13 +108,13 @@ def delete(prefix, file_path):
             Bucket=os.getenv("AWS_BUCKET_NAME"), Key=s3_key,
         )
     except Exception as e:
-        print(f"[ERROR] S3 delete failed: {e}")
+        logger.error(f"S3 delete failed: {e}")
         return
 
 
 def get_presigned_url(prefix, file_path, expiration=3600):
     if not s3:
-        print("⚠️  S3 not available - returning dummy URL")
+        logger.warning("S3 not available - returning dummy URL")
         return f"https://example.com/{prefix}/{file_path}"
     
     try:
@@ -132,13 +134,13 @@ def get_presigned_url(prefix, file_path, expiration=3600):
         )
         return url
     except Exception as e:
-        print("Error generating pre-signed URL:", e)
+        logger.error("Error generating pre-signed URL:", e)
         return None
 
 
 def get_random_image(prefix, file_path, expiration=3600):
     if not s3:
-        print("⚠️  S3 not available - returning None for random image")
+        logger.warning("S3 not available - returning None for random image")
         return None
     
     try:
@@ -154,5 +156,5 @@ def get_random_image(prefix, file_path, expiration=3600):
             return random.choice(file_keys)
         return None
     except Exception as e:
-        print("Error generating pre-signed URL:", e)
+        logger.error("Error generating pre-signed URL:", e)
         return None

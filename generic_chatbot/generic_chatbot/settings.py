@@ -237,17 +237,94 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 # Environment settings
 BACKEND_ENVIRONMENT = os.getenv("BACKEND_ENVIRONMENT", "production")
 
+# Create logs directory if it doesn't exist
+LOGS_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+        "detailed": {
+            "format": "[{levelname}] {asctime} {name} {funcName}:{lineno} - {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "detailed",
+            "level": "DEBUG" if DEBUG else "INFO",
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(BASE_DIR, "logs", "django.log"),
+            "maxBytes": 1024 * 1024 * 10,  # 10MB
+            "backupCount": 5,
+            "formatter": "detailed",
+            "level": "INFO",
+        },
+        "error_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(BASE_DIR, "logs", "error.log"),
+            "maxBytes": 1024 * 1024 * 10,  # 10MB
+            "backupCount": 5,
+            "formatter": "detailed",
+            "level": "ERROR",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console", "file", "error_file"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.server": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "chatbot": {
+            "handlers": ["console", "file", "error_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "chatbot.views": {
+            "handlers": ["console", "file", "error_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "chatbot.services": {
+            "handlers": ["console", "file", "error_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "chatbot.admin": {
+            "handlers": ["console", "file", "error_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "server": {
+            "handlers": ["console", "file", "error_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
         },
     },
     "root": {
-        "handlers": ["console"],
-        "level": "DEBUG",
+        "handlers": ["console", "file", "error_file"],
+        "level": "INFO",
     },
 }

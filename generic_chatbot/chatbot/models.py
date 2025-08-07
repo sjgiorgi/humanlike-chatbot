@@ -11,7 +11,7 @@ class Persona(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
 
 
 class Conversation(models.Model):
@@ -34,7 +34,7 @@ class Conversation(models.Model):
         null=True,
         blank=True,
         related_name="conversations",
-        help_text="The persona randomly selected for this conversation"
+        help_text="The persona randomly selected for this conversation",
     )
 
     def __str__(self):
@@ -97,7 +97,7 @@ class Bot(models.Model):
         Persona,
         blank=True,
         related_name="bots",
-        help_text="Select personas that this bot should embody"
+        help_text="Select personas that this bot should embody",
     )
 
     def __str__(self):

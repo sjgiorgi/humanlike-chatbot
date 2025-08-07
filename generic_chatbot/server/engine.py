@@ -1,7 +1,11 @@
+import logging
 import os
 
 from kani.engines.anthropic import AnthropicEngine
 from kani.engines.openai import OpenAIEngine
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 
 def initialize_engine(model_type, model_id, csv_name=""):
@@ -27,7 +31,7 @@ def get_or_create_engine(model_type, model_id, engine_instances):
     engine_key = (model_type, model_id)
 
     if engine_key not in engine_instances:
-        print(f"Initializing Engine: Type={model_type}, Model={model_id}")
+        logger.info(f"Initializing Engine: Type={model_type}, Model={model_id}")
         engine_instances[engine_key] = initialize_engine(model_type, model_id)
 
     return engine_instances[engine_key]

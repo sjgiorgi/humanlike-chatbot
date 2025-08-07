@@ -1,7 +1,11 @@
 import json
+import logging
 
 from django.apps import apps
 from django.db import connection
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 
 def load_config():
@@ -16,12 +20,12 @@ def load_config():
         # Check if "bots" exists in the configuration
         bots = config.get("bots", [])
         if not bots:
-            print("No bots found in configuration.")
+            logger.warning("No bots found in configuration.")
             return config
 
         # Check if the database is ready
         if not connection.introspection.table_names():
-            print("Database not ready. Skipping bot loading.")
+            logger.warning("Database not ready. Skipping bot loading.")
             return config
 
         # Dynamically fetch the Bot model
@@ -45,7 +49,7 @@ def load_config():
                     model_id=bot["model_id"],  # Ensure model_id is set
                 )
 
-        print("Bots loaded successfully.")
+        logger.info("Bots loaded successfully.")
         return config
 
     except FileNotFoundError:
@@ -53,5 +57,5 @@ def load_config():
     except json.JSONDecodeError as e:
         raise RuntimeError(f"Error decoding 'config.json': {e}")
     except Exception as e:
-        print(f"Unexpected error loading config: {e}")
+        logger.error(f"Unexpected error loading config: {e}")
         raise

@@ -1,4 +1,5 @@
 import json
+import logging
 
 from asgiref.sync import sync_to_async
 from django.http import JsonResponse
@@ -9,6 +10,9 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Bot, Control
 from .services.post_processing import human_like_chunks
 from .services.runchat import run_chat_round
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 # Dictionary to store per-engine configurations
 engine_instances = {}
@@ -21,30 +25,30 @@ def health_check(request):
 @csrf_exempt
 def test_upload(request):
     """Simple test endpoint to check if file uploads work"""
-    if request.method == 'POST':
+    if request.method == "POST":
         if request.FILES:
             file_info = []
             for field_name, uploaded_file in request.FILES.items():
                 file_info.append({
-                    'field_name': field_name,
-                    'file_name': uploaded_file.name,
-                    'file_size': uploaded_file.size,
-                    'content_type': uploaded_file.content_type
+                    "field_name": field_name,
+                    "file_name": uploaded_file.name,
+                    "file_size": uploaded_file.size,
+                    "content_type": uploaded_file.content_type,
                 })
             return JsonResponse({
                 "status": "success",
                 "message": "File upload test successful",
-                "files": file_info
+                "files": file_info,
             })
         else:
             return JsonResponse({
                 "status": "error",
-                "message": "No files received"
+                "message": "No files received",
             }, status=400)
     else:
         return JsonResponse({
             "status": "error",
-            "message": "Only POST method allowed"
+            "message": "Only POST method allowed",
         }, status=405)
 
 
@@ -94,5 +98,5 @@ class ChatbotAPIView(View):
             )
 
         except Exception as e:
-            print(f"❌ [ERROR] ChatbotAPIView Exception: {e}")
+            logger.error(f"❌ [ERROR] ChatbotAPIView Exception: {e}")
             return JsonResponse({"error": str(e)}, status=500)
