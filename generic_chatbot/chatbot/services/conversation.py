@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 from datetime import datetime
 
 from asgiref.sync import async_to_sync
@@ -13,6 +14,21 @@ from ..models import Bot, Conversation, Utterance
 from .runchat import save_chat_to_db
 
 logger = logging.getLogger(__name__)
+
+
+def randomly_select_persona(bot):
+    """
+    Randomly select one persona from the bot's assigned personas.
+    Returns None if no personas are assigned.
+    """
+    assigned_personas = list(bot.personas.all())
+    if assigned_personas:
+        selected_persona = random.choice(assigned_personas)
+        logger.info(f"Randomly selected persona '{selected_persona.name}' for bot '{bot.name}'")
+        return selected_persona
+    else:
+        logger.info(f"No personas assigned to bot '{bot.name}', using default behavior")
+        return None
 
 
 def load_conversation_history(conversation_id):
@@ -115,6 +131,9 @@ class InitializeConversationAPIView(View):
                     status=200,
                 )
 
+            # Randomly select a persona for this conversation
+            selected_persona = randomly_select_persona(bot)
+            
             # Create new conversation
             try:
                 Conversation.objects.create(
@@ -127,8 +146,9 @@ class InitializeConversationAPIView(View):
                     survey_id=survey_id,
                     survey_meta_data=survey_meta_data,
                     started_time=datetime.now(),
+                    selected_persona=selected_persona,
                 )
-                logger.debug("Conversation created.")
+                logger.debug("Conversation created with persona: %s", selected_persona.name if selected_persona else "None")
             except Exception:
                 logger.exception("Error creating Conversation")
                 return JsonResponse(

@@ -187,6 +187,7 @@ class ConversationAdmin(BaseAdmin):
         "bot_name",
         "participant_id",
         "utterance_count",
+        "selected_persona",
         "study_name",
         "user_group",
         "started_time",
@@ -200,8 +201,8 @@ class ConversationAdmin(BaseAdmin):
         "user_group",
         "survey_id",
     )
-    list_filter = ("bot_name", "user_group", "study_name", "started_time")
-    readonly_fields = ("started_time", "utterance_count")
+    list_filter = ("bot_name", "user_group", "study_name", "started_time", "selected_persona")
+    readonly_fields = ("started_time", "utterance_count", "selected_persona")
     ordering = ("-started_time",)
     list_per_page = 25
     
@@ -216,6 +217,10 @@ class ConversationAdmin(BaseAdmin):
     fieldsets = (
         ("Basic Information", {
             "fields": ("conversation_id", "bot_name", "participant_id", "initial_utterance"),
+        }),
+        ("Persona Information", {
+            "fields": ("selected_persona",),
+            "description": "The persona randomly selected for this conversation",
         }),
         ("Study Information", {
             "fields": ("study_name", "user_group", "survey_id"),
