@@ -76,8 +76,8 @@ class BotAdminForm(forms.ModelForm):
                         if os.path.exists(local_path):
                             image_url = f"/media/avatars/{avatar.chatbot_avatar}"
                             self.fields["avatar_image"].help_text = format_html(
-                                '<div style="margin: 10px 0;"><strong>Current Avatar:</strong><br>'
-                                '<img src="{}" alt="Current Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;" /><br>'
+                                '<div><strong>Current Avatar:</strong><br>'
+                                '<img src="{}" alt="Current Avatar" /><br>'
                                 '<small>{}</small></div>',
                                 image_url, avatar.chatbot_avatar
                             )
@@ -88,8 +88,8 @@ class BotAdminForm(forms.ModelForm):
                         image_url = get_presigned_url("avatar", avatar.chatbot_avatar, expiration=3600)
                         if image_url:
                             self.fields["avatar_image"].help_text = format_html(
-                                '<div style="margin: 10px 0;"><strong>Current Avatar:</strong><br>'
-                                '<img src="{}" alt="Current Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;" /><br>'
+                                '<div><strong>Current Avatar:</strong><br>'
+                                '<img src="{}" alt="Current Avatar" /><br>'
                                 '<small>{}</small></div>',
                                 image_url, avatar.chatbot_avatar
                             )
@@ -279,7 +279,7 @@ class BotAdmin(BaseAdmin):
                     if os.path.exists(local_path):
                         image_url = f"/media/avatars/{avatar.chatbot_avatar}"
                         return format_html(
-                            '<img src="{}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />',
+                            '<img src="{}" alt="Avatar" />',
                             image_url,
                         )
                 else:
@@ -287,12 +287,12 @@ class BotAdmin(BaseAdmin):
                     image_url = get_presigned_url("avatar", avatar.chatbot_avatar, expiration=3600)
                     if image_url:
                         return format_html(
-                            '<img src="{}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />',
+                            '<img src="{}" alt="Avatar" />',
                             image_url,
                         )
         except Exception:
             pass
-        return format_html('<span style="color: #999;">No avatar</span>')
+        return format_html('<span>No avatar</span>')
     avatar_preview.short_description = "Avatar"
 
     fieldsets = (
@@ -579,7 +579,7 @@ class AvatarAdmin(BaseAdmin):
                     if os.path.exists(local_path):
                         image_url = f"/media/avatars/{obj.chatbot_avatar}"
                         return format_html(
-                            '<img src="{}" alt="Chatbot Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" title="{}" />',
+                            '<img src="{}" alt="Chatbot Avatar" title="{}" />',
                             image_url, obj.chatbot_avatar,
                         )
                 else:
@@ -587,12 +587,12 @@ class AvatarAdmin(BaseAdmin):
                     image_url = get_presigned_url("avatar", obj.chatbot_avatar, expiration=3600)
                     if image_url:
                         return format_html(
-                            '<img src="{}" alt="Chatbot Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" title="{}" />',
+                            '<img src="{}" alt="Chatbot Avatar" title="{}" />',
                             image_url, obj.chatbot_avatar,
                         )
             except Exception:
                 pass
-        return format_html('<span style="color: #999;">No chatbot avatar</span>')
+        return format_html('<span>No chatbot avatar</span>')
     avatar_preview.short_description = "Chatbot Avatar"
     
     def avatar_preview_field(self, obj):
@@ -604,8 +604,8 @@ class AvatarAdmin(BaseAdmin):
                 participant_url = get_presigned_url("avatar", obj.participant_avatar, expiration=3600)
                 if participant_url:
                     html_parts.append(
-                        f'<div style="margin-bottom: 10px;"><strong>Participant Avatar:</strong><br>'
-                        f'<img src="{participant_url}" alt="Participant Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;" /><br>'
+                        f'<div><strong>Participant Avatar:</strong><br>'
+                        f'<img src="{participant_url}" alt="Participant Avatar" /><br>'
                         f'<small>{obj.participant_avatar}</small></div>',
                     )
             except Exception:
@@ -625,7 +625,7 @@ class AvatarAdmin(BaseAdmin):
                         chatbot_url = f"/media/avatars/{obj.chatbot_avatar}"
                         html_parts.append(
                             f'<div><strong>Chatbot Avatar:</strong><br>'
-                            f'<img src="{chatbot_url}" alt="Chatbot Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;" /><br>'
+                            f'<img src="{chatbot_url}" alt="Chatbot Avatar" /><br>'
                             f'<small>{obj.chatbot_avatar}</small></div>',
                         )
                     else:
@@ -636,7 +636,7 @@ class AvatarAdmin(BaseAdmin):
                     if chatbot_url:
                         html_parts.append(
                             f'<div><strong>Chatbot Avatar:</strong><br>'
-                            f'<img src="{chatbot_url}" alt="Chatbot Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;" /><br>'
+                            f'<img src="{chatbot_url}" alt="Chatbot Avatar" /><br>'
                             f'<small>{obj.chatbot_avatar}</small></div>',
                         )
                     else:
@@ -645,7 +645,7 @@ class AvatarAdmin(BaseAdmin):
                 html_parts.append("<div><strong>Chatbot Avatar:</strong> Error loading image</div>")
         
         if not html_parts:
-            return format_html('<span style="color: #999;">No avatars available</span>')
+            return format_html('<span>No avatars available</span>')
         
         return format_html("".join(html_parts))
     avatar_preview_field.short_description = "Avatar Images"
