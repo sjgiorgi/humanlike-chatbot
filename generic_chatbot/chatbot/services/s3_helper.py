@@ -3,12 +3,13 @@ import os
 import random
 
 import boto3
+from django.conf import settings
 from PIL import Image
 
 # Initialize S3 client with proper error handling
 s3 = None
 try:
-    if os.getenv("BACKEND_ENVIRONMENT") == "local":
+    if settings.BACKEND_ENVIRONMENT == "local":
         # For local development, check if AWS credentials are available
         aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
         aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -65,6 +66,10 @@ def upload(data, file_path):
             s3_key = file_path
         else:
             s3_key = f"avatar/{file_path}"
+        
+        # Ensure the data is at the beginning
+        if hasattr(data, 'seek'):
+            data.seek(0)
         
         s3.upload_fileobj(
             data,

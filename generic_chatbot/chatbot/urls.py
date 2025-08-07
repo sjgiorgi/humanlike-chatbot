@@ -8,11 +8,13 @@ from .services.conversation import (
 from .services.keystroke import update_keystrokes
 from .services.upload import get_presigned_url
 from .services.voicechat import get_realtime_session, upload_voice_utterance
-from .views import ChatbotAPIView, health_check
+from .views import ChatbotAPIView, health_check, test_upload
 
 urlpatterns = [
     # 1) Health Check
     path("health/", health_check, name="health_check"),
+    # 2) Test Upload
+    path("test-upload/", test_upload, name="test_upload"),
     # 2) Initialize a Conversation
     path(
         "api/initialize_conversation/",
