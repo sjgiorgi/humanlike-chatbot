@@ -18,6 +18,36 @@ def health_check(request):
     return JsonResponse({"status": "ok"})
 
 
+@csrf_exempt
+def test_upload(request):
+    """Simple test endpoint to check if file uploads work"""
+    if request.method == 'POST':
+        if request.FILES:
+            file_info = []
+            for field_name, uploaded_file in request.FILES.items():
+                file_info.append({
+                    'field_name': field_name,
+                    'file_name': uploaded_file.name,
+                    'file_size': uploaded_file.size,
+                    'content_type': uploaded_file.content_type
+                })
+            return JsonResponse({
+                "status": "success",
+                "message": "File upload test successful",
+                "files": file_info
+            })
+        else:
+            return JsonResponse({
+                "status": "error",
+                "message": "No files received"
+            }, status=400)
+    else:
+        return JsonResponse({
+            "status": "error",
+            "message": "Only POST method allowed"
+        }, status=405)
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class ChatbotAPIView(View):
     async def post(self, request, *args, **kwargs):
