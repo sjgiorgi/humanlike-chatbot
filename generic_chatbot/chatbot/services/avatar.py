@@ -155,12 +155,43 @@ class AvatarDetailAPIView(View):
                 else:
                     avatar.chatbot_avatar = avatar.participant_avatar
                 avatar.save()
-            else:
-                avatar = Avatar.objects.get(bot=bot, bot_conversation=None)
-
-            if avatar.chatbot_avatar:
-                data["image_url"] = get_presigned_url("avatar", avatar.chatbot_avatar)
-            else:
+                
+                if avatar.chatbot_avatar:
+                    # Check if we're in local development
+                    if os.getenv("BACKEND_ENVIRONMENT") == "local":
+                        # For local development, serve from media directory
+                        from django.conf import settings
+                        local_path = os.path.join(settings.MEDIA_ROOT, "avatars", avatar.chatbot_avatar)
+                        if os.path.exists(local_path):
+                            data["image_url"] = f"/media/avatars/{avatar.chatbot_avatar}"
+                        else:
+                            data["image_url"] = None
+                    else:
+                        # Production: Get presigned URL
+                        data["image_url"] = get_presigned_url("avatar", avatar.chatbot_avatar)
+                else:
+                    data["image_url"] = None
+            elif bot.avatar_type == "default":
+                try:
+                    avatar = Avatar.objects.get(bot=bot, bot_conversation=None)
+                    if avatar.chatbot_avatar:
+                        # Check if we're in local development
+                        if os.getenv("BACKEND_ENVIRONMENT") == "local":
+                            # For local development, serve from media directory
+                            from django.conf import settings
+                            local_path = os.path.join(settings.MEDIA_ROOT, "avatars", avatar.chatbot_avatar)
+                            if os.path.exists(local_path):
+                                data["image_url"] = f"/media/avatars/{avatar.chatbot_avatar}"
+                            else:
+                                data["image_url"] = None
+                        else:
+                            # Production: Get presigned URL
+                            data["image_url"] = get_presigned_url("avatar", avatar.chatbot_avatar)
+                    else:
+                        data["image_url"] = None
+                except Avatar.DoesNotExist:
+                    data["image_url"] = None
+            else:  # avatar_type == "none"
                 data["image_url"] = None
             return JsonResponse(data, status=200)
         except Bot.DoesNotExist:
