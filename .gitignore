@@ -24,6 +24,8 @@ build/
 # Django
 db.sqlite3
 /media/
+media/
+*/media/
 /staticfiles/
 
 # Environment Files
