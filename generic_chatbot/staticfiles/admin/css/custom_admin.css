@@ -1,213 +1,418 @@
-/* Custom Admin CSS for Humanlike Chatbot */
+/* Professional Admin CSS for Humanlike Chatbot */
 
-/* General improvements */
+/* ===== GLOBAL STYLES ===== */
 .admin-interface {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #2c3e50;
 }
 
-/* Conversation list improvements */
-.field-utterance_count .utterance-link {
-    color: #007cba;
-    text-decoration: none;
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background-color: #f0f8ff;
-    border: 1px solid #e1e5e9;
-}
-
-.field-utterance_count .utterance-link:hover {
-    background-color: #e1f5fe;
-    text-decoration: underline;
-}
-
-.field-utterance_count .no-utterances {
-    color: #666;
-    font-style: italic;
-}
-
-/* Utterance list improvements */
-.field-conversation_link .conversation-link {
-    color: #007cba;
-    text-decoration: none;
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-}
-
-.field-conversation_link .conversation-link:hover {
-    background-color: #e9ecef;
-    text-decoration: underline;
-}
-
-.field-conversation_link .no-conversation {
-    color: #dc3545;
-    font-style: italic;
-}
-
-/* Message preview styling */
-.field-text_preview .message-preview {
-    display: inline-block;
-    max-width: 300px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 13px;
-    line-height: 1.4;
-    cursor: help;
-}
-
-.field-text_preview .user-message {
-    background-color: #e3f2fd;
-    border-left: 3px solid #2196f3;
-    color: #1565c0;
-}
-
-.field-text_preview .bot-message {
-    background-color: #f3e5f5;
-    border-left: 3px solid #9c27b0;
-    color: #7b1fa2;
-}
-
-/* Session time styling */
-.field-total_session_time .session-time {
-    font-weight: 500;
-    color: #28a745;
-    background-color: #d4edda;
-    padding: 2px 6px;
-    border-radius: 3px;
-    border: 1px solid #c3e6cb;
-}
-
-/* Table improvements */
+/* ===== TABLE IMPROVEMENTS ===== */
 #result_list {
     border-collapse: collapse;
     width: 100%;
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 #result_list th {
     background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
-    padding: 12px 8px;
+    border-bottom: 2px solid #e9ecef;
+    padding: 12px 16px;
     font-weight: 600;
     color: #495057;
+    text-align: left;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 #result_list td {
-    padding: 8px;
-    border-bottom: 1px solid #e9ecef;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f3f4;
     vertical-align: top;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 #result_list tr:hover {
     background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
 }
 
-/* Filter improvements */
+#result_list tr:last-child td {
+    border-bottom: none;
+}
+
+/* ===== LINK STYLING ===== */
+/* Unified link style for all relationship links */
+.field-utterance_count .utterance-link,
+.field-conversation_link .conversation-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: #f0f7ff;
+    border: 1px solid #d1e7ff;
+    transition: all 0.2s ease;
+    display: inline-block;
+    font-size: 13px;
+}
+
+.field-utterance_count .utterance-link:hover,
+.field-conversation_link .conversation-link:hover {
+    background-color: #e6f3ff;
+    border-color: #0066cc;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 102, 204, 0.15);
+}
+
+/* Empty state styling */
+.field-utterance_count .no-utterances,
+.field-conversation_link .no-conversation {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* ===== MESSAGE PREVIEW STYLING ===== */
+.field-text_preview .message-preview {
+    display: inline-block;
+    max-width: 300px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: help;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.field-text_preview .message-preview:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.field-text_preview .user-message {
+    background-color: #f0f7ff;
+    border-left: 3px solid #0066cc;
+    color: #1a4a8a;
+}
+
+.field-text_preview .bot-message {
+    background-color: #f8f9fa;
+    border-left: 3px solid #6c757d;
+    color: #495057;
+}
+
+/* ===== SESSION TIME STYLING ===== */
+.field-total_session_time .session-time {
+    font-weight: 500;
+    color: #198754;
+    background-color: #f0f8f4;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #d1e7dd;
+    font-size: 13px;
+}
+
+/* ===== MODULE HEADERS ===== */
 .module h2, .module caption {
-    background-color: #007cba;
+    background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
     color: white;
-    padding: 8px 12px;
-    border-radius: 4px 4px 0 0;
+    padding: 12px 20px;
+    border-radius: 6px 6px 0 0;
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
 }
 
-/* Search improvements */
+/* ===== SEARCH FORM ===== */
 .search-form {
     background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    border: 1px solid #dee2e6;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-/* Pagination improvements */
+/* ===== PAGINATION ===== */
 .pagination {
-    margin: 20px 0;
+    margin: 24px 0;
     text-align: center;
 }
 
 .pagination a {
-    color: #007cba;
+    color: #0066cc;
     text-decoration: none;
     padding: 8px 12px;
     margin: 0 2px;
     border: 1px solid #dee2e6;
-    border-radius: 3px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-weight: 500;
 }
 
 .pagination a:hover {
-    background-color: #e9ecef;
+    background-color: #f0f7ff;
+    border-color: #0066cc;
+    text-decoration: none;
 }
 
 .pagination .this-page {
-    background-color: #007cba;
+    background-color: #0066cc;
     color: white;
-    border-color: #007cba;
+    border-color: #0066cc;
+    font-weight: 600;
 }
 
-/* Boolean field improvements */
+/* ===== BOOLEAN FIELDS ===== */
 .field-has_initial_utterance img {
     width: 16px;
     height: 16px;
+    filter: brightness(0.8);
 }
 
-/* Responsive improvements */
-@media (max-width: 768px) {
-    .field-text_preview .message-preview {
-        max-width: 200px;
-        font-size: 12px;
-    }
-    
-    #result_list th,
-    #result_list td {
-        padding: 6px 4px;
-        font-size: 13px;
-    }
-}
-
-/* Fieldset improvements */
+/* ===== FIELDSET STYLING ===== */
 .module fieldset {
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .module fieldset legend {
     background-color: #f8f9fa;
-    padding: 8px 12px;
-    border-radius: 4px;
+    padding: 10px 16px;
+    border-radius: 6px;
     font-weight: 600;
     color: #495057;
-    border: 1px solid #dee2e6;
+    border: 1px solid #e9ecef;
     border-bottom: none;
+    font-size: 14px;
+    margin-left: 16px;
 }
 
-/* Form improvements */
+/* ===== FORM STYLING ===== */
 .form-row {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    padding: 0 16px;
 }
 
 .form-row label {
-    font-weight: 500;
+    font-weight: 600;
     color: #495057;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
     display: block;
+    font-size: 14px;
 }
 
 .form-row input,
 .form-row textarea,
 .form-row select {
     border: 1px solid #ced4da;
-    border-radius: 4px;
-    padding: 8px 12px;
+    border-radius: 6px;
+    padding: 10px 14px;
     font-size: 14px;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .form-row input:focus,
 .form-row textarea:focus,
 .form-row select:focus {
-    border-color: #007cba;
+    border-color: #0066cc;
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* ===== DEPRECATION WARNING ===== */
+.field-deprecation_warning span {
+    color: #dc3545;
+    font-weight: 600;
+    background-color: #f8d7da;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #f5c6cb;
+    display: inline-block;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    .field-text_preview .message-preview {
+        max-width: 200px;
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    
+    #result_list th,
+    #result_list td {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .form-row {
+        padding: 0 12px;
+    }
+    
+    .search-form {
+        padding: 16px;
+    }
+}
+
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+/* Focus indicators for keyboard navigation */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    #result_list th {
+        background-color: #000;
+        color: #fff;
+    }
+    
+    .field-text_preview .message-preview {
+        border-width: 2px;
+    }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    .pagination,
+    .search-form,
+    .module fieldset legend {
+        display: none;
+    }
+    
+    #result_list {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    #result_list th {
+        background-color: #f0f0f0 !important;
+        color: #000 !important;
+    }
+}
+
+/* ===== AVATAR UPLOAD STYLING ===== */
+.avatar-upload-field {
+    border: 2px dashed #0066cc;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.avatar-upload-field:hover {
+    border-color: #0056b3;
+    background-color: #f0f7ff;
+}
+
+.avatar-upload-field:focus {
+    border-color: #0066cc;
+    background-color: #f0f7ff;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Avatar preview styling */
+.field-avatar_preview img,
+.field-avatar_preview_field img {
+    border: 2px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.field-avatar_preview img:hover,
+.field-avatar_preview_field img:hover {
+    border-color: #0066cc;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Avatar list view styling */
+.field-avatar_preview {
+    text-align: center;
+}
+
+.field-avatar_preview img {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Avatar detail view styling */
+.field-avatar_preview_field {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.field-avatar_preview_field strong {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: inline-block;
+}
+
+.field-avatar_preview_field small {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 4px;
+    display: inline-block;
+}
+
+/* File upload styling */
+input[type="file"] {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 8px;
+    background-color: white;
+    font-size: 14px;
+}
+
+input[type="file"]:focus {
+    border-color: #0066cc;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Help text styling */
+.help {
+    color: #6c757d;
+    font-size: 13px;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.help strong {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Success/Error message styling */
+.messagelist .success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.messagelist .error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
 } 

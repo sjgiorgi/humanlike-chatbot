@@ -22,7 +22,7 @@ def load_conversation_history(conversation_id):
     """
     try:
         conversation = Conversation.objects.get(conversation_id=conversation_id)
-        utterances = Utterance.objects.filter(conversation=conversation).order_by('created_time')
+        utterances = Utterance.objects.filter(conversation=conversation).order_by("created_time")
         
         # Build conversation history for cache
         conversation_history = []
@@ -38,7 +38,7 @@ def load_conversation_history(conversation_id):
             # Add to frontend format
             messages.append({
                 "sender": "You" if role == "user" else "AI Chatbot",
-                "content": content
+                "content": content,
             })
         
         # Populate cache
@@ -151,7 +151,7 @@ class InitializeConversationAPIView(View):
                     # Add to initial messages for frontend
                     initial_messages.append({
                         "sender": "AI Chatbot",
-                        "content": bot.initial_utterance.strip()
+                        "content": bot.initial_utterance.strip(),
                     })
                 except Exception as e:
                     logger.exception("Failed to save initial bot message: %s", str(e))

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/EditBots.css";
 
 function Avatar() {
   const [file, setFile] = useState(null);

@@ -76,7 +76,7 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     if not conversation_history:
         try:
             conversation = await sync_to_async(Conversation.objects.get)(conversation_id=conversation_id)
-            utterances = await sync_to_async(list)(Utterance.objects.filter(conversation=conversation).order_by('created_time'))
+            utterances = await sync_to_async(list)(Utterance.objects.filter(conversation=conversation).order_by("created_time"))
             
             # Build conversation history from database
             for utterance in utterances:
