@@ -74,6 +74,33 @@ class AvatarAPIView(View):
 
     def post(self, request, *args, **kwargs):
         try:
+            # Check if this is a simple file upload (from EditBots)
+            if request.FILES.get('image'):
+                # Simple file upload from EditBots
+                bot_name = request.POST.get("bot_name")
+                bot = Bot.objects.get(name=bot_name)
+                image_file = request.FILES.get("image")
+                
+                # Generate avatar using the uploaded file
+                image = generate_avatar(
+                    image_file,
+                    bot_name,
+                    bot.avatar_type
+                )
+                
+                # Create avatar record
+                avatar = Avatar.objects.create(
+                    bot=bot,
+                    bot_conversation=None,
+                    image=image
+                )
+                
+                return JsonResponse(
+                    {"message": "SUCCESS!"},
+                    status=201
+                )
+            
+            # Original S3-based implementation
             data = json.loads(request.body)
             bot_name = data.get("bot_name")
             bot = Bot.objects.get(name=bot_name)
@@ -209,6 +236,29 @@ class AvatarDetailAPIView(View):
             return JsonResponse({"error": "Bot not found"}, status=404)
 
         try:
+            # Check if this is a simple file upload (from EditBots)
+            if request.FILES.get('image'):
+                # Simple file upload from EditBots
+                image_file = request.FILES.get("image")
+                
+                # Delete old avatar if exists
+                if avatar.image:
+                    avatar.image.delete(save=False)
+                
+                # Generate new avatar
+                edit_image = generate_avatar(
+                    image_file,
+                    bot.name,
+                    bot.avatar_type
+                )
+                
+                # Update avatar
+                avatar.image = edit_image
+                avatar.save()
+                
+                return JsonResponse({"message": "Avatar updated successfully."}, status=200)
+            
+            # Original S3-based implementation
             image_key = None
 
             if avatar.chatbot_avatar:
