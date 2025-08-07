@@ -60,19 +60,25 @@ def upload(data, file_path):
         return None
     
     try:
+        # Check if file_path already includes the avatar prefix
+        if file_path.startswith("avatar/"):
+            s3_key = file_path
+        else:
+            s3_key = f"avatar/{file_path}"
+        
         s3.upload_fileobj(
             data,
             os.getenv("AWS_BUCKET_NAME"),
-            f"avatar/{file_path}",
+            s3_key,
             ExtraArgs={
-                "ContentType": "PNG",
+                "ContentType": "image/png",
                 "ACL": "private",  # or 'public-read' if you want it public
             },
         )
-        return f"avatar/{file_path}"
+        return s3_key
 
     except Exception as e:
-        print(f"[ERROR] {e}")
+        print(f"[ERROR] S3 upload failed: {e}")
         return None
 
 
@@ -82,11 +88,17 @@ def delete(prefix, file_path):
         return
     
     try:
+        # Check if file_path already includes the prefix
+        if file_path.startswith(f"{prefix}/"):
+            s3_key = file_path
+        else:
+            s3_key = f"{prefix}/{file_path}"
+        
         s3.delete_object(
-            Bucket=os.getenv("AWS_BUCKET_NAME"), Key=f"{prefix}/{file_path}",
+            Bucket=os.getenv("AWS_BUCKET_NAME"), Key=s3_key,
         )
     except Exception as e:
-        print(f"[ERROR] {e}")
+        print(f"[ERROR] S3 delete failed: {e}")
         return
 
 
@@ -96,11 +108,17 @@ def get_presigned_url(prefix, file_path, expiration=3600):
         return f"https://example.com/{prefix}/{file_path}"
     
     try:
+        # Check if file_path already includes the prefix
+        if file_path.startswith(f"{prefix}/"):
+            s3_key = file_path
+        else:
+            s3_key = f"{prefix}/{file_path}"
+        
         url = s3.generate_presigned_url(
             "get_object",
             Params={
                 "Bucket": os.getenv("AWS_BUCKET_NAME"),
-                "Key": f"{prefix}/{file_path}",
+                "Key": s3_key,
             },
             ExpiresIn=expiration,  # seconds
         )
