@@ -31,6 +31,9 @@ COPY . /app
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Create nginx log directory
+RUN mkdir -p /var/log/nginx
+
 # Expose the application's port
 EXPOSE 8000 80
 
@@ -39,4 +42,4 @@ RUN chmod +x /app/entrypoint.sh
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Command to run the application with nginx
-CMD ["sh", "-c", "service nginx start && gunicorn generic_chatbot.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300"]
+CMD ["sh", "-c", "nginx -t && service nginx start && gunicorn generic_chatbot.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300"]

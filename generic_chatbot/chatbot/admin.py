@@ -269,12 +269,12 @@ class BotAdmin(BaseAdmin):
             avatar = Avatar.objects.filter(bot=obj, bot_conversation__isnull=True).first()
             if avatar and avatar.chatbot_avatar:
                 # Check if we're in local development
-                import os
-                is_local = os.getenv("BACKEND_ENVIRONMENT") == "local"
+                from django.conf import settings
+                is_local = settings.BACKEND_ENVIRONMENT == "local"
                 
                 if is_local:
                     # For local development, serve from media directory
-                    from django.conf import settings
+                    import os
                     local_path = os.path.join(settings.MEDIA_ROOT, "avatars", avatar.chatbot_avatar)
                     if os.path.exists(local_path):
                         image_url = f"/media/avatars/{avatar.chatbot_avatar}"
@@ -328,19 +328,20 @@ class BotAdmin(BaseAdmin):
             if obj.avatar_type in ["default", "user"]:
                 try:
                     # Check if we're in local development
-                    import os
-                    is_local = os.getenv("BACKEND_ENVIRONMENT") == "local"
+                    from django.conf import settings
+                    is_local = settings.BACKEND_ENVIRONMENT == "local"
                     
                     if is_local:
                         # Local development: Process image directly without S3
                         raw_image = Image.open(avatar_image)
                         
                         # Process through generate_avatar directly
-                        image, image_key = generate_avatar(
+                        image = generate_avatar(
                             raw_image,
                             obj.name,
                             obj.avatar_type,
                         )
+                        image_key = image.name if hasattr(image, 'name') else f"{obj.name}_{int(time.time())}.png"
                         
                         if image and image_key:
                             # For local development, save to local media directory
@@ -404,11 +405,12 @@ class BotAdmin(BaseAdmin):
                         processed_image = download("uploads", raw_filename)
                         
                         if processed_image:
-                            image, image_key = generate_avatar(
+                            image = generate_avatar(
                                 processed_image,
                                 obj.name,
                                 obj.avatar_type,
                             )
+                            image_key = image.name if hasattr(image, 'name') else f"{obj.name}_{int(time.time())}.png"
                             
                             if image and image_key:
                                 # Upload processed image to S3
@@ -569,12 +571,12 @@ class AvatarAdmin(BaseAdmin):
         if obj.chatbot_avatar:
             try:
                 # Check if we're in local development
-                import os
-                is_local = os.getenv("BACKEND_ENVIRONMENT") == "local"
+                from django.conf import settings
+                is_local = settings.BACKEND_ENVIRONMENT == "local"
                 
                 if is_local:
                     # For local development, serve from media directory
-                    from django.conf import settings
+                    import os
                     local_path = os.path.join(settings.MEDIA_ROOT, "avatars", obj.chatbot_avatar)
                     if os.path.exists(local_path):
                         image_url = f"/media/avatars/{obj.chatbot_avatar}"
@@ -614,12 +616,12 @@ class AvatarAdmin(BaseAdmin):
         if obj.chatbot_avatar:
             try:
                 # Check if we're in local development
-                import os
-                is_local = os.getenv("BACKEND_ENVIRONMENT") == "local"
+                from django.conf import settings
+                is_local = settings.BACKEND_ENVIRONMENT == "local"
                 
                 if is_local:
                     # For local development, serve from media directory
-                    from django.conf import settings
+                    import os
                     local_path = os.path.join(settings.MEDIA_ROOT, "avatars", obj.chatbot_avatar)
                     if os.path.exists(local_path):
                         chatbot_url = f"/media/avatars/{obj.chatbot_avatar}"

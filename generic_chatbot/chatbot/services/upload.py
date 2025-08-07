@@ -1,6 +1,7 @@
 import os
 
 import boto3
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -10,7 +11,7 @@ def get_presigned_url(request):
     file_name = request.GET.get("filename")
     content_type = request.GET.get("content_type")
 
-    if os.getenv("BACKEND_ENVIRONMENT") == "local":
+    if settings.BACKEND_ENVIRONMENT == "local":
         s3_client = boto3.client(
             "s3",
             aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
