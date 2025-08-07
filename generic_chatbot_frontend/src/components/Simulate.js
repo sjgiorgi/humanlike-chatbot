@@ -41,8 +41,7 @@ const Simulate = () => {
 
 
   const handleEditBots = () => {
-    // Redirect to Django admin instead of EditBots page
-    window.open("/api/admin/", "_blank");
+    navigate("/edit-bots");
   };
 
   return (
@@ -118,7 +117,7 @@ const Simulate = () => {
         className="btn btn-secondary"
         style={{ marginTop: "10px" }}
       >
-        Admin Panel (Manage Bots)
+        Manage Bots
       </button>
     </div>
   );
