@@ -14,10 +14,6 @@ const Conversation = () => {
     avatar_type: "none",
     image_base64: "",
   });
-  const [botConfig, setBotConfig] = useState(null);
-  const [idleTimer, setIdleTimer] = useState(null);
-  const [lastUserActivity, setLastUserActivity] = useState(Date.now());
-  const [followupRequested, setFollowupRequested] = useState(false);
 
   const apiUrl = process.env.REACT_APP_API_URL;
   const params = new URLSearchParams(window.location.search);
@@ -29,27 +25,6 @@ const Conversation = () => {
   const userGroup = params.get("user_group") || "";
   const condition = params.get("condition") || "";
   const surveyMetaData = window.location.href;
-
-  // Fetch bot configuration
-  useEffect(() => {
-    if (!botName) return;
-
-    const fetchBotConfig = async () => {
-      try {
-        const res = await fetch(`${apiUrl}/bots/`);
-        if (!res.ok) throw new Error("Failed to fetch bots");
-        const data = await res.json();
-        const bot = data.bots.find(b => b.name === botName);
-        if (bot) {
-          setBotConfig(bot);
-        }
-      } catch (err) {
-        console.error("Failed to fetch bot config:", err);
-      }
-    };
-
-    fetchBotConfig();
-  }, [apiUrl, botName]);
 
   // Initialize conversation on mount
   useEffect(() => {
@@ -124,120 +99,34 @@ const Conversation = () => {
     surveyMetaData,
   ]);
 
-    // Idle detection and follow-up logic - only based on conversation data
-  useEffect(() => {
-    if (!botConfig?.follow_up_on_idle || !botConfig?.idle_time_minutes) {
-      return;
-    }
-
-    let currentTimer = null;
-    let isFollowupRequested = false;
-
-    const resetIdleTimer = () => {
-      if (currentTimer) {
-        clearTimeout(currentTimer);
-        currentTimer = null;
-      }
-      isFollowupRequested = false;
-      setFollowupRequested(false);
-    };
-
-    const startIdleTimer = () => {
-      const idleTimeMs = botConfig.idle_time_minutes * 60 * 1000;
-      currentTimer = setTimeout(async () => {
-        // Prevent multiple followup requests
-        if (isFollowupRequested) {
-          console.log("🕐 Followup already requested, skipping...");
-          return;
-        }
-        
-        try {
-          console.log("🕐 User idle detected, requesting follow-up...");
-          isFollowupRequested = true;
-          setFollowupRequested(true);
-          
-          const res = await fetch(`${apiUrl}/followup/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              bot_name: botName,
-              conversation_id: conversationId,
-              participant_id: participantId,
-            }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            const chunks = data.response_chunks || [data.response];
-            const useHumanlikeDelay = data.humanlike_delay !== false; // Default to true if not specified
-            const delayConfig = data.delay_config || null;
-            console.log(`📝 Follow-up response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}`, delayConfig);
-            setIsTyping(true);
-            revealChunks(chunks, 0, useHumanlikeDelay, delayConfig);
-          } else {
-            const error = await res.json();
-            console.warn("Follow-up request failed:", error.error);
-            isFollowupRequested = false;
-            setFollowupRequested(false); // Reset flag on error
-          }
-        } catch (err) {
-          console.error("Error requesting follow-up:", err);
-          isFollowupRequested = false;
-          setFollowupRequested(false); // Reset flag on error
-        }
-      }, idleTimeMs);
-    };
-
-    // Start initial timer
-    startIdleTimer();
-
-    // Cleanup
-    return () => {
-      if (currentTimer) {
-        clearTimeout(currentTimer);
-      }
-    };
-  }, [botConfig, botName, conversationId, participantId, apiUrl, messages.length]);
-
-  const getHumanDelay = (chunk, chunkIndex, totalChunks, backendTimeMs, delayConfig = null) => {
-    // Use bot-specific config or fallback to defaults
-    const config = delayConfig || {
-      typing_speed_min_ms: 100,
-      typing_speed_max_ms: 200,
-      question_thinking_ms: 300,
-      first_chunk_thinking_ms: 600,
-      last_chunk_pause_ms: 100,
-      min_delay_ms: 200,
-      max_delay_ms: 800,
-    };
+  const getHumanDelay = (chunk, chunkIndex, totalChunks, backendTimeMs) => {
+    // Base typing speed: 100-200ms per character (faster but still human-like)
+    const baseTypingTime = chunk.length * (Math.random() * 100 + 100);
     
-    // Base typing speed: configurable ms per character
-    const baseTypingTime = chunk.length * (Math.random() * (config.typing_speed_max_ms - config.typing_speed_min_ms) + config.typing_speed_min_ms);
-    
-    // Contextual adjustments (configurable)
+    // Contextual adjustments (reduced)
     let contextualDelay = 0;
-    if (chunk.includes('?')) contextualDelay += config.question_thinking_ms;
-    if (chunkIndex === 0) contextualDelay += config.first_chunk_thinking_ms;
-    if (chunkIndex === totalChunks - 1) contextualDelay += config.last_chunk_pause_ms;
+    if (chunk.includes('?')) contextualDelay += 300; // Questions need thinking
+    if (chunkIndex === 0) contextualDelay += 600;   // First chunk needs "thinking time"
+    if (chunkIndex === totalChunks - 1) contextualDelay += 100; // Last chunk pause
     
     const totalDelay = baseTypingTime + contextualDelay;
     
-    // Smart backend compensation with configurable limits
+    // Smart backend compensation
     if (backendTimeMs >= totalDelay) {
       // Backend was slow, use minimum delays to maintain smoothness
-      const minDelay = Math.max(config.min_delay_ms, config.max_delay_ms - (backendTimeMs - totalDelay) / totalChunks);
+      const minDelay = Math.max(300, 800 - (backendTimeMs - totalDelay) / totalChunks);
       console.log(`🐌 Slow backend (${backendTimeMs}ms), using min delay: ${minDelay}ms for chunk ${chunkIndex + 1}/${totalChunks}`);
       return minDelay;
     } else {
       // Backend was fast, subtract its time from our delay
-      const adjustedDelay = Math.max(config.min_delay_ms, totalDelay - backendTimeMs);
+      const adjustedDelay = Math.max(200, totalDelay - backendTimeMs);
       console.log(`✅ Normal timing: base=${totalDelay}ms, backend=${backendTimeMs}ms, adjusted=${adjustedDelay}ms for chunk ${chunkIndex + 1}/${totalChunks}`);
       return adjustedDelay;
     }
   };
 
   // Reveal chunks one by one
-  const revealChunks = (chunks, backendTimeMs = 0, useHumanlikeDelay = true, delayConfig = null) => {
+  const revealChunks = (chunks, backendTimeMs = 0) => {
     const valid = chunks.filter(
       (c) => typeof c === "string" && c.trim().length
     );
@@ -247,24 +136,11 @@ const Conversation = () => {
       return;
     }
 
-    // If humanlike delay is disabled, show all chunks instantly
-    if (!useHumanlikeDelay) {
-      valid.forEach((chunk) => {
-        setMessages((prev) => [
-          ...prev,
-          { sender: "AI Chatbot", content: chunk },
-        ]);
-      });
-      setIsTyping(false);
-      return;
-    }
-
-    // Apply humanlike delays
     let cumulative = 0;
     const totalChunks = valid.length;
 
     valid.forEach((chunk, i) => {
-      const delay = getHumanDelay(chunk, i, totalChunks, backendTimeMs, delayConfig);
+      const delay = getHumanDelay(chunk, i, totalChunks, backendTimeMs);
       cumulative += delay;
 
       setTimeout(() => {
@@ -288,25 +164,6 @@ const Conversation = () => {
       return;
     }
     console.log("✉️ Enqueue user message:", message);
-
-    // Reset followup timer when user sends a message
-    setFollowupRequested(false); // Reset followup flag when user sends message
-    
-    // Reset the "followup sent once" flag when user sends a message
-    // This allows followup to trigger again after user interaction
-    if (botConfig?.follow_up_on_idle && !botConfig?.recurring_followup) {
-      // Clear the server-side flag that prevents recurring followups
-      fetch(`${apiUrl}/followup/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bot_name: botName,
-          conversation_id: conversationId,
-          participant_id: participantId,
-          reset_flag: true, // Signal to reset the "sent once" flag
-        }),
-      }).catch(err => console.log("Failed to reset followup flag:", err));
-    }
 
     setMessages((prev) => [...prev, { sender: "You", content: message }]);
     setMessage("");
@@ -337,11 +194,9 @@ const Conversation = () => {
       console.log(`⏱️ Backend request took ${backendTimeMs}ms`);
       
       const chunks = data.response_chunks || [data.response];
-      const useHumanlikeDelay = data.humanlike_delay !== false; // Default to true if not specified
-      const delayConfig = data.delay_config || null;
-      console.log(`📝 Response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}`, delayConfig);
+      console.log(`📝 Response has ${chunks.length} chunks`);
       setIsTyping(true);
-      revealChunks(chunks, backendTimeMs, useHumanlikeDelay, delayConfig);
+      revealChunks(chunks, backendTimeMs);
     } catch (err) {
       console.error("Error sending message:", err);
       alert("An error occurred. Please try again.");
