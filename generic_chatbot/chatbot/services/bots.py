@@ -30,6 +30,10 @@ class ListBotsAPIView(View):
                 "prompt",
                 "initial_utterance",
                 "avatar_type",
+                "chunk_messages",
+                "follow_up_on_idle",
+                "idle_time_minutes",
+                "follow_up_instruction_prompt",
             )
             return JsonResponse({"bots": list(bots)}, status=200)
         except Exception as e:
@@ -96,6 +100,10 @@ class BotDetailAPIView(View):
                 "prompt": bot.prompt,
                 "initial_utterance": bot.initial_utterance,
                 "avatar_type": bot.avatar_type,
+                "chunk_messages": bot.chunk_messages,
+                "follow_up_on_idle": bot.follow_up_on_idle,
+                "idle_time_minutes": bot.idle_time_minutes,
+                "follow_up_instruction_prompt": bot.follow_up_instruction_prompt,
             }
             return JsonResponse(data, status=200)
         except Bot.DoesNotExist:

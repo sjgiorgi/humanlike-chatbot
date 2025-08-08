@@ -14,6 +14,9 @@ const Conversation = () => {
     avatar_type: "none",
     image_base64: "",
   });
+  const [botConfig, setBotConfig] = useState(null);
+  const [idleTimer, setIdleTimer] = useState(null);
+  const [lastUserActivity, setLastUserActivity] = useState(Date.now());
 
   const apiUrl = process.env.REACT_APP_API_URL;
   const params = new URLSearchParams(window.location.search);
@@ -25,6 +28,27 @@ const Conversation = () => {
   const userGroup = params.get("user_group") || "";
   const condition = params.get("condition") || "";
   const surveyMetaData = window.location.href;
+
+  // Fetch bot configuration
+  useEffect(() => {
+    if (!botName) return;
+
+    const fetchBotConfig = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/bots/`);
+        if (!res.ok) throw new Error("Failed to fetch bots");
+        const data = await res.json();
+        const bot = data.bots.find(b => b.name === botName);
+        if (bot) {
+          setBotConfig(bot);
+        }
+      } catch (err) {
+        console.error("Failed to fetch bot config:", err);
+      }
+    };
+
+    fetchBotConfig();
+  }, [apiUrl, botName]);
 
   // Initialize conversation on mount
   useEffect(() => {
@@ -99,6 +123,77 @@ const Conversation = () => {
     surveyMetaData,
   ]);
 
+  // Idle detection and follow-up logic
+  useEffect(() => {
+    if (!botConfig?.follow_up_on_idle || !botConfig?.idle_time_minutes) {
+      return;
+    }
+
+    const resetIdleTimer = () => {
+      setLastUserActivity(Date.now());
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+      }
+    };
+
+    const startIdleTimer = () => {
+      const idleTimeMs = botConfig.idle_time_minutes * 60 * 1000;
+      const timer = setTimeout(async () => {
+        try {
+          console.log("🕐 User idle detected, requesting follow-up...");
+          const res = await fetch(`${apiUrl}/followup/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bot_name: botName,
+              conversation_id: conversationId,
+              participant_id: participantId,
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const chunks = data.response_chunks || [data.response];
+            console.log(`📝 Follow-up response has ${chunks.length} chunks`);
+            setIsTyping(true);
+            revealChunks(chunks);
+          } else {
+            const error = await res.json();
+            console.warn("Follow-up request failed:", error.error);
+          }
+        } catch (err) {
+          console.error("Error requesting follow-up:", err);
+        }
+      }, idleTimeMs);
+      setIdleTimer(timer);
+    };
+
+    // Reset timer on user activity
+    const handleUserActivity = () => {
+      resetIdleTimer();
+      startIdleTimer();
+    };
+
+    // Start initial timer
+    startIdleTimer();
+
+    // Add event listeners for user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      document.addEventListener(event, handleUserActivity, true);
+    });
+
+    // Cleanup
+    return () => {
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+      }
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserActivity, true);
+      });
+    };
+  }, [botConfig, botName, conversationId, participantId, apiUrl, idleTimer]);
+
   const getHumanDelay = (chunk, chunkIndex, totalChunks, backendTimeMs) => {
     // Base typing speed: 100-200ms per character (faster but still human-like)
     const baseTypingTime = chunk.length * (Math.random() * 100 + 100);
@@ -164,6 +259,9 @@ const Conversation = () => {
       return;
     }
     console.log("✉️ Enqueue user message:", message);
+
+    // Reset idle timer when user sends a message
+    setLastUserActivity(Date.now());
 
     setMessages((prev) => [...prev, { sender: "You", content: message }]);
     setMessage("");

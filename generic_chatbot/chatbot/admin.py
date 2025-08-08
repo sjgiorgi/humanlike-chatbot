@@ -299,12 +299,13 @@ class BotAdmin(BaseAdmin):
         "avatar_type",
         "has_initial_utterance",
         "chunk_messages",
+        "follow_up_on_idle",
         "get_persona_count",
         "avatar_preview",
     )
     list_display_links = ("name",)
     search_fields = ("name", "model_type", "model_id")
-    list_filter = ("model_type", "avatar_type", "chunk_messages", "personas")
+    list_filter = ("model_type", "avatar_type", "chunk_messages", "follow_up_on_idle", "personas")
     ordering = ("name",)
     filter_horizontal = ["personas"]
     
@@ -368,6 +369,10 @@ class BotAdmin(BaseAdmin):
         ("Response Settings", {
             "fields": ("chunk_messages",),
             "description": "Control how bot responses are formatted",
+        }),
+        ("Follow-up Settings", {
+            "fields": ("follow_up_on_idle", "idle_time_minutes", "follow_up_instruction_prompt"),
+            "description": "Configure automatic follow-up messages when users are idle",
         }),
     )
     

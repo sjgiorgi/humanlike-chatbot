@@ -92,6 +92,21 @@ class Bot(models.Model):
         help_text="If true, split responses into human-like chunks; if false, send as one blob",
     )
 
+    # Follow-up on idle settings
+    follow_up_on_idle = models.BooleanField(
+        default=False,
+        help_text="If true, bot will send follow-up messages when user is idle",
+    )
+    idle_time_minutes = models.IntegerField(
+        default=2,
+        help_text="Minutes of inactivity before considering user idle",
+    )
+    follow_up_instruction_prompt = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Instructions for generating follow-up messages when user is idle",
+    )
+
     # Many-to-many relationship with personas
     personas = models.ManyToManyField(
         Persona,
