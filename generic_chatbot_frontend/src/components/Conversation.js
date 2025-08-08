@@ -3,7 +3,6 @@ import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import "../styles/Conversation.css";
 
-const TYPING_INTERVAL = 500; // milliseconds
 
 const Conversation = () => {
   const [message, setMessage] = useState("");
@@ -100,11 +99,34 @@ const Conversation = () => {
     surveyMetaData,
   ]);
 
-  const getHumanDelay = (text) =>
-    (2 + text.length * (Math.random() * (0.05 - 0.015) + 0.015)) * 1000;
+  const getHumanDelay = (chunk, chunkIndex, totalChunks, backendTimeMs) => {
+    // Base typing speed: 100-200ms per character (faster but still human-like)
+    const baseTypingTime = chunk.length * (Math.random() * 100 + 100);
+    
+    // Contextual adjustments (reduced)
+    let contextualDelay = 0;
+    if (chunk.includes('?')) contextualDelay += 300; // Questions need thinking
+    if (chunkIndex === 0) contextualDelay += 600;   // First chunk needs "thinking time"
+    if (chunkIndex === totalChunks - 1) contextualDelay += 100; // Last chunk pause
+    
+    const totalDelay = baseTypingTime + contextualDelay;
+    
+    // Smart backend compensation
+    if (backendTimeMs >= totalDelay) {
+      // Backend was slow, use minimum delays to maintain smoothness
+      const minDelay = Math.max(300, 800 - (backendTimeMs - totalDelay) / totalChunks);
+      console.log(`🐌 Slow backend (${backendTimeMs}ms), using min delay: ${minDelay}ms for chunk ${chunkIndex + 1}/${totalChunks}`);
+      return minDelay;
+    } else {
+      // Backend was fast, subtract its time from our delay
+      const adjustedDelay = Math.max(200, totalDelay - backendTimeMs);
+      console.log(`✅ Normal timing: base=${totalDelay}ms, backend=${backendTimeMs}ms, adjusted=${adjustedDelay}ms for chunk ${chunkIndex + 1}/${totalChunks}`);
+      return adjustedDelay;
+    }
+  };
 
   // Reveal chunks one by one
-  const revealChunks = (chunks) => {
+  const revealChunks = (chunks, backendTimeMs = 0) => {
     const valid = chunks.filter(
       (c) => typeof c === "string" && c.trim().length
     );
@@ -115,9 +137,10 @@ const Conversation = () => {
     }
 
     let cumulative = 0;
+    const totalChunks = valid.length;
 
     valid.forEach((chunk, i) => {
-      const delay = getHumanDelay(chunk);
+      const delay = getHumanDelay(chunk, i, totalChunks, backendTimeMs);
       cumulative += delay;
 
       setTimeout(() => {
@@ -145,6 +168,8 @@ const Conversation = () => {
     setMessages((prev) => [...prev, { sender: "You", content: message }]);
     setMessage("");
 
+    const requestStartTime = Date.now();
+
     try {
       const res = await fetch(`${apiUrl}/chatbot/`, {
         method: "POST",
@@ -163,9 +188,15 @@ const Conversation = () => {
         return;
       }
       const data = await res.json();
+      const requestEndTime = Date.now();
+      const backendTimeMs = requestEndTime - requestStartTime;
+      
+      console.log(`⏱️ Backend request took ${backendTimeMs}ms`);
+      
       const chunks = data.response_chunks || [data.response];
+      console.log(`📝 Response has ${chunks.length} chunks`);
       setIsTyping(true);
-      revealChunks(chunks);
+      revealChunks(chunks, backendTimeMs);
     } catch (err) {
       console.error("Error sending message:", err);
       alert("An error occurred. Please try again.");
