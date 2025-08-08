@@ -5,6 +5,7 @@ from .services.bots import BotDetailAPIView, ListBotsAPIView  # Import from bots
 from .services.conversation import (
     InitializeConversationAPIView,  # Import from conversation.py
 )
+from .services.followup import FollowupAPIView
 from .services.keystroke import update_keystrokes
 from .services.upload import get_presigned_url
 from .services.voicechat import get_realtime_session, upload_voice_utterance
@@ -23,7 +24,9 @@ urlpatterns = [
     ),
     # 3) Chatbot Conversation Endpoint
     path("api/chatbot/", ChatbotAPIView.as_view(), name="chatbot_api"),
-    # 4) Bots Collection (List and/or Create)
+    # 4) Follow-up Message Endpoint
+    path("api/followup/", FollowupAPIView.as_view(), name="followup_api"),
+    # 5) Bots Collection (List and/or Create)
     path("api/bots/", ListBotsAPIView.as_view(), name="list_bots"),
     # 5) Bot Detail by Primary Key (Retrieve, Update, Delete)
     path("api/bots/<int:pk>/", BotDetailAPIView.as_view(), name="bot-detail"),

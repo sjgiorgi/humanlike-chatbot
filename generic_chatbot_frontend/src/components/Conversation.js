@@ -3,7 +3,6 @@ import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import "../styles/Conversation.css";
 
-const TYPING_INTERVAL = 500; // milliseconds
 
 const Conversation = () => {
   const [message, setMessage] = useState("");
@@ -15,6 +14,9 @@ const Conversation = () => {
     avatar_type: "none",
     image_base64: "",
   });
+  const [botConfig, setBotConfig] = useState(null);
+  const [idleTimer, setIdleTimer] = useState(null);
+  const [lastUserActivity, setLastUserActivity] = useState(Date.now());
 
   const apiUrl = process.env.REACT_APP_API_URL;
   const params = new URLSearchParams(window.location.search);
@@ -26,6 +28,27 @@ const Conversation = () => {
   const userGroup = params.get("user_group") || "";
   const condition = params.get("condition") || "";
   const surveyMetaData = window.location.href;
+
+  // Fetch bot configuration
+  useEffect(() => {
+    if (!botName) return;
+
+    const fetchBotConfig = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/bots/`);
+        if (!res.ok) throw new Error("Failed to fetch bots");
+        const data = await res.json();
+        const bot = data.bots.find(b => b.name === botName);
+        if (bot) {
+          setBotConfig(bot);
+        }
+      } catch (err) {
+        console.error("Failed to fetch bot config:", err);
+      }
+    };
+
+    fetchBotConfig();
+  }, [apiUrl, botName]);
 
   // Initialize conversation on mount
   useEffect(() => {
@@ -100,11 +123,105 @@ const Conversation = () => {
     surveyMetaData,
   ]);
 
-  const getHumanDelay = (text) =>
-    (2 + text.length * (Math.random() * (0.05 - 0.015) + 0.015)) * 1000;
+  // Idle detection and follow-up logic
+  useEffect(() => {
+    if (!botConfig?.follow_up_on_idle || !botConfig?.idle_time_minutes) {
+      return;
+    }
+
+    const resetIdleTimer = () => {
+      setLastUserActivity(Date.now());
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+      }
+    };
+
+    const startIdleTimer = () => {
+      const idleTimeMs = botConfig.idle_time_minutes * 60 * 1000;
+      const timer = setTimeout(async () => {
+        try {
+          console.log("🕐 User idle detected, requesting follow-up...");
+          const res = await fetch(`${apiUrl}/followup/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bot_name: botName,
+              conversation_id: conversationId,
+              participant_id: participantId,
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const chunks = data.response_chunks || [data.response];
+            console.log(`📝 Follow-up response has ${chunks.length} chunks`);
+            setIsTyping(true);
+            revealChunks(chunks);
+          } else {
+            const error = await res.json();
+            console.warn("Follow-up request failed:", error.error);
+          }
+        } catch (err) {
+          console.error("Error requesting follow-up:", err);
+        }
+      }, idleTimeMs);
+      setIdleTimer(timer);
+    };
+
+    // Reset timer on user activity
+    const handleUserActivity = () => {
+      resetIdleTimer();
+      startIdleTimer();
+    };
+
+    // Start initial timer
+    startIdleTimer();
+
+    // Add event listeners for user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      document.addEventListener(event, handleUserActivity, true);
+    });
+
+    // Cleanup
+    return () => {
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+      }
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserActivity, true);
+      });
+    };
+  }, [botConfig, botName, conversationId, participantId, apiUrl, idleTimer]);
+
+  const getHumanDelay = (chunk, chunkIndex, totalChunks, backendTimeMs) => {
+    // Base typing speed: 100-200ms per character (faster but still human-like)
+    const baseTypingTime = chunk.length * (Math.random() * 100 + 100);
+    
+    // Contextual adjustments (reduced)
+    let contextualDelay = 0;
+    if (chunk.includes('?')) contextualDelay += 300; // Questions need thinking
+    if (chunkIndex === 0) contextualDelay += 600;   // First chunk needs "thinking time"
+    if (chunkIndex === totalChunks - 1) contextualDelay += 100; // Last chunk pause
+    
+    const totalDelay = baseTypingTime + contextualDelay;
+    
+    // Smart backend compensation
+    if (backendTimeMs >= totalDelay) {
+      // Backend was slow, use minimum delays to maintain smoothness
+      const minDelay = Math.max(300, 800 - (backendTimeMs - totalDelay) / totalChunks);
+      console.log(`🐌 Slow backend (${backendTimeMs}ms), using min delay: ${minDelay}ms for chunk ${chunkIndex + 1}/${totalChunks}`);
+      return minDelay;
+    } else {
+      // Backend was fast, subtract its time from our delay
+      const adjustedDelay = Math.max(200, totalDelay - backendTimeMs);
+      console.log(`✅ Normal timing: base=${totalDelay}ms, backend=${backendTimeMs}ms, adjusted=${adjustedDelay}ms for chunk ${chunkIndex + 1}/${totalChunks}`);
+      return adjustedDelay;
+    }
+  };
 
   // Reveal chunks one by one
-  const revealChunks = (chunks) => {
+  const revealChunks = (chunks, backendTimeMs = 0) => {
     const valid = chunks.filter(
       (c) => typeof c === "string" && c.trim().length
     );
@@ -115,9 +232,10 @@ const Conversation = () => {
     }
 
     let cumulative = 0;
+    const totalChunks = valid.length;
 
     valid.forEach((chunk, i) => {
-      const delay = getHumanDelay(chunk);
+      const delay = getHumanDelay(chunk, i, totalChunks, backendTimeMs);
       cumulative += delay;
 
       setTimeout(() => {
@@ -142,8 +260,13 @@ const Conversation = () => {
     }
     console.log("✉️ Enqueue user message:", message);
 
+    // Reset idle timer when user sends a message
+    setLastUserActivity(Date.now());
+
     setMessages((prev) => [...prev, { sender: "You", content: message }]);
     setMessage("");
+
+    const requestStartTime = Date.now();
 
     try {
       const res = await fetch(`${apiUrl}/chatbot/`, {
@@ -163,9 +286,15 @@ const Conversation = () => {
         return;
       }
       const data = await res.json();
+      const requestEndTime = Date.now();
+      const backendTimeMs = requestEndTime - requestStartTime;
+      
+      console.log(`⏱️ Backend request took ${backendTimeMs}ms`);
+      
       const chunks = data.response_chunks || [data.response];
+      console.log(`📝 Response has ${chunks.length} chunks`);
       setIsTyping(true);
-      revealChunks(chunks);
+      revealChunks(chunks, backendTimeMs);
     } catch (err) {
       console.error("Error sending message:", err);
       alert("An error occurred. Please try again.");
