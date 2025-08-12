@@ -296,6 +296,7 @@ class BotAdmin(BaseAdmin):
         "humanlike_delay",
         "follow_up_on_idle",
         "recurring_followup",
+        "max_transcript_length",
         "get_persona_count",
         "avatar_preview",
     )
@@ -363,8 +364,8 @@ class BotAdmin(BaseAdmin):
             "description": "Upload and manage bot avatar image",
         }),
         ("Response Settings", {
-            "fields": ("chunk_messages", "humanlike_delay"),
-            "description": "Control how bot responses are formatted and displayed",
+            "fields": ("chunk_messages", "humanlike_delay", "max_transcript_length"),
+            "description": "Control how bot responses are formatted and displayed. Max transcript length controls how many previous messages to include in chat history. 0 = no chat history (only current message), 1+ = include that many most recent messages.",
         }),
         ("Humanlike Delay Configuration", {
             "fields": (
