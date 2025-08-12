@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from PIL import Image
 
-from .models import Avatar, Bot, Control, Conversation, Keystroke, Persona, Utterance
+from .models import Avatar, Bot, Conversation, Keystroke, Persona, Utterance
 from .services.avatar import generate_avatar
 from .services.s3_helper import delete, get_presigned_url, upload
 
@@ -128,22 +128,7 @@ class BaseAdmin(admin.ModelAdmin):
         return list_display
 
 
-@admin.register(Control)
-class ControlAdmin(BaseAdmin):
-    list_display = ("chunk_messages", "deprecation_warning")
-    actions = None
 
-    def has_add_permission(self, request):
-        # only allow creating the very first row
-        return not Control.objects.exists()
-
-    def has_delete_permission(self, request, obj=None):
-        # prevent deletion
-        return False
-    
-    def deprecation_warning(self, obj):
-        return format_html("<span>⚠️ DEPRECATED - Use Bot-specific settings instead</span>")
-    deprecation_warning.short_description = "Status"
 
 
 @admin.register(Persona)

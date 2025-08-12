@@ -7,7 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Bot, Control
+from .models import Bot
 from .services.post_processing import human_like_chunks
 from .services.runchat import run_chat_round
 
@@ -72,14 +72,15 @@ class ChatbotAPIView(View):
                 message=message,
             )
             
-            # Get bot-specific chunk setting (fallback to global Control for backward compatibility)
+            # Get bot-specific settings
             try:
                 bot = await sync_to_async(Bot.objects.get)(name=bot_name)
                 use_chunks = bot.chunk_messages
+                use_humanlike_delay = bot.humanlike_delay
             except Bot.DoesNotExist:
-                # Fallback to global Control setting
-                ctrl = await sync_to_async(Control.objects.first)()
-                use_chunks = ctrl.chunk_messages if ctrl else True
+                # Use defaults if bot not found
+                use_chunks = True
+                use_humanlike_delay = True
 
             # split or not
             if use_chunks:
@@ -93,6 +94,7 @@ class ChatbotAPIView(View):
                     "response": response_text,
                     "response_chunks": response_chunks,
                     "bot_name": bot_name,
+                    "humanlike_delay": use_humanlike_delay,
                 },
                 status=200,
             )
