@@ -69,6 +69,13 @@ class Utterance(models.Model):
         blank=True,
         help_text="The instruction prompt (bot prompt + persona) that was passed to the LLM for this utterance"
     )
+    
+    # Store the chat history that was passed to the LLM for this utterance
+    chat_history_used = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The chat history (formatted as JSON) that was actually passed to the LLM for this utterance"
+    )
 
     def __str__(self):
         return f"{self.speaker_id}: {self.text[:50]}"
