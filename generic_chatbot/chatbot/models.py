@@ -62,6 +62,13 @@ class Utterance(models.Model):
     )  # path to saved audio
     # to distinguish voice vs text utterances
     is_voice = models.BooleanField(default=False)
+    
+    # Store the instruction prompt that was passed to the LLM for this utterance
+    instruction_prompt = models.TextField(
+        null=True, 
+        blank=True,
+        help_text="The instruction prompt (bot prompt + persona) that was passed to the LLM for this utterance"
+    )
 
     def __str__(self):
         return f"{self.speaker_id}: {self.text[:50]}"
@@ -92,6 +99,42 @@ class Bot(models.Model):
         help_text="If true, split responses into human-like chunks; if false, send as one blob",
     )
 
+    # Humanlike delay control (bot-specific)
+    humanlike_delay = models.BooleanField(
+        default=True,
+        help_text="If true, apply human-like typing delays; if false, show messages instantly",
+    )
+    
+    # Humanlike delay configuration (bot-specific)
+    typing_speed_min_ms = models.IntegerField(
+        default=100,
+        help_text="Minimum milliseconds per character for typing speed (base delay)",
+    )
+    typing_speed_max_ms = models.IntegerField(
+        default=200,
+        help_text="Maximum milliseconds per character for typing speed (base delay)",
+    )
+    question_thinking_ms = models.IntegerField(
+        default=300,
+        help_text="Additional milliseconds for chunks containing questions",
+    )
+    first_chunk_thinking_ms = models.IntegerField(
+        default=600,
+        help_text="Additional milliseconds for the first chunk (thinking time)",
+    )
+    last_chunk_pause_ms = models.IntegerField(
+        default=100,
+        help_text="Additional milliseconds for the last chunk",
+    )
+    min_delay_ms = models.IntegerField(
+        default=200,
+        help_text="Minimum delay in milliseconds (when backend is fast)",
+    )
+    max_delay_ms = models.IntegerField(
+        default=800,
+        help_text="Maximum delay in milliseconds (when backend is slow)",
+    )
+
     # Follow-up on idle settings
     follow_up_on_idle = models.BooleanField(
         default=False,
@@ -105,6 +148,10 @@ class Bot(models.Model):
         blank=True,
         null=True,
         help_text="Instructions for generating follow-up messages when user is idle",
+    )
+    recurring_followup = models.BooleanField(
+        default=False,
+        help_text="If true, bot will keep sending follow-up messages while user is idle. If false, bot will only send one follow-up per idle period.",
     )
 
     # Many-to-many relationship with personas
@@ -154,11 +201,4 @@ class Avatar(models.Model):
         return f"Avatar for Conversation {self.bot.name} {self.bot.avatar_type} {self.condition} {self.participant_avatar} {self.chatbot_avatar}"
 
 
-class Control(models.Model):
-    chunk_messages = models.BooleanField(
-        default=True,
-        help_text="If true, split into human-like chunks; if false, send as one blob",
-    )
 
-    def __str__(self):
-        return f"Chunks {'on' if self.chunk_messages else 'off'}"

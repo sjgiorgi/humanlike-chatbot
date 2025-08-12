@@ -7,7 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Bot, Control
+from .models import Bot
 from .services.post_processing import human_like_chunks
 from .services.runchat import run_chat_round
 
@@ -72,14 +72,33 @@ class ChatbotAPIView(View):
                 message=message,
             )
             
-            # Get bot-specific chunk setting (fallback to global Control for backward compatibility)
+            # Get bot-specific settings
             try:
                 bot = await sync_to_async(Bot.objects.get)(name=bot_name)
                 use_chunks = bot.chunk_messages
+                use_humanlike_delay = bot.humanlike_delay
+                delay_config = {
+                    "typing_speed_min_ms": bot.typing_speed_min_ms,
+                    "typing_speed_max_ms": bot.typing_speed_max_ms,
+                    "question_thinking_ms": bot.question_thinking_ms,
+                    "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
+                    "last_chunk_pause_ms": bot.last_chunk_pause_ms,
+                    "min_delay_ms": bot.min_delay_ms,
+                    "max_delay_ms": bot.max_delay_ms,
+                }
             except Bot.DoesNotExist:
-                # Fallback to global Control setting
-                ctrl = await sync_to_async(Control.objects.first)()
-                use_chunks = ctrl.chunk_messages if ctrl else True
+                # Use defaults if bot not found
+                use_chunks = True
+                use_humanlike_delay = True
+                delay_config = {
+                    "typing_speed_min_ms": 100,
+                    "typing_speed_max_ms": 200,
+                    "question_thinking_ms": 300,
+                    "first_chunk_thinking_ms": 600,
+                    "last_chunk_pause_ms": 100,
+                    "min_delay_ms": 200,
+                    "max_delay_ms": 800,
+                }
 
             # split or not
             if use_chunks:
@@ -93,6 +112,8 @@ class ChatbotAPIView(View):
                     "response": response_text,
                     "response_chunks": response_chunks,
                     "bot_name": bot_name,
+                    "humanlike_delay": use_humanlike_delay,
+                    "delay_config": delay_config,
                 },
                 status=200,
             )

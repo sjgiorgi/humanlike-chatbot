@@ -31,6 +31,14 @@ class ListBotsAPIView(View):
                 "initial_utterance",
                 "avatar_type",
                 "chunk_messages",
+                "humanlike_delay",
+                "typing_speed_min_ms",
+                "typing_speed_max_ms",
+                "question_thinking_ms",
+                "first_chunk_thinking_ms",
+                "last_chunk_pause_ms",
+                "min_delay_ms",
+                "max_delay_ms",
                 "follow_up_on_idle",
                 "idle_time_minutes",
                 "follow_up_instruction_prompt",
@@ -101,6 +109,14 @@ class BotDetailAPIView(View):
                 "initial_utterance": bot.initial_utterance,
                 "avatar_type": bot.avatar_type,
                 "chunk_messages": bot.chunk_messages,
+                "humanlike_delay": bot.humanlike_delay,
+                "typing_speed_min_ms": bot.typing_speed_min_ms,
+                "typing_speed_max_ms": bot.typing_speed_max_ms,
+                "question_thinking_ms": bot.question_thinking_ms,
+                "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
+                "last_chunk_pause_ms": bot.last_chunk_pause_ms,
+                "min_delay_ms": bot.min_delay_ms,
+                "max_delay_ms": bot.max_delay_ms,
                 "follow_up_on_idle": bot.follow_up_on_idle,
                 "idle_time_minutes": bot.idle_time_minutes,
                 "follow_up_instruction_prompt": bot.follow_up_instruction_prompt,
@@ -126,6 +142,18 @@ class BotDetailAPIView(View):
             bot.prompt = data.get("prompt", bot.prompt)
             bot.initial_utterance = data.get("initial_utterance", bot.initial_utterance)
             bot.avatar_type = data.get("avatar_type", bot.avatar_type)
+            bot.chunk_messages = data.get("chunk_messages", bot.chunk_messages)
+            bot.humanlike_delay = data.get("humanlike_delay", bot.humanlike_delay)
+            bot.typing_speed_min_ms = data.get("typing_speed_min_ms", bot.typing_speed_min_ms)
+            bot.typing_speed_max_ms = data.get("typing_speed_max_ms", bot.typing_speed_max_ms)
+            bot.question_thinking_ms = data.get("question_thinking_ms", bot.question_thinking_ms)
+            bot.first_chunk_thinking_ms = data.get("first_chunk_thinking_ms", bot.first_chunk_thinking_ms)
+            bot.last_chunk_pause_ms = data.get("last_chunk_pause_ms", bot.last_chunk_pause_ms)
+            bot.min_delay_ms = data.get("min_delay_ms", bot.min_delay_ms)
+            bot.max_delay_ms = data.get("max_delay_ms", bot.max_delay_ms)
+            bot.follow_up_on_idle = data.get("follow_up_on_idle", bot.follow_up_on_idle)
+            bot.idle_time_minutes = data.get("idle_time_minutes", bot.idle_time_minutes)
+            bot.follow_up_instruction_prompt = data.get("follow_up_instruction_prompt", bot.follow_up_instruction_prompt)
             bot.save()
 
             return JsonResponse({"message": "Bot updated successfully."}, status=200)

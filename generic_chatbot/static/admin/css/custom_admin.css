@@ -101,7 +101,29 @@
     background: #f0f8ff;
 }
 
-/* 11. Responsive avatar sizing */
+/* 11. Instruction prompt preview styling */
+.field-instruction_prompt_preview .instruction-preview {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    color: #007cba;
+    font-family: monospace;
+    font-size: 0.9em;
+    background: #f0f8ff;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid #007cba;
+}
+
+.field-instruction_prompt_preview .no-instruction {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+/* 12. Responsive avatar sizing */
 @media (max-width: 768px) {
     .field-avatar_preview img,
     .field-avatar_preview_field img,
@@ -124,5 +146,10 @@
     .current-avatar {
         width: 40px;
         height: 40px;
+    }
+    
+    .field-instruction_prompt_preview .instruction-preview {
+        max-width: 200px;
+        font-size: 0.8em;
     }
 } 
