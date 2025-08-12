@@ -119,9 +119,27 @@ class FollowupAPIView(View):
                 bot = await sync_to_async(Bot.objects.get)(name=bot_name)
                 use_chunks = bot.chunk_messages
                 use_humanlike_delay = bot.humanlike_delay
+                delay_config = {
+                    "typing_speed_min_ms": bot.typing_speed_min_ms,
+                    "typing_speed_max_ms": bot.typing_speed_max_ms,
+                    "question_thinking_ms": bot.question_thinking_ms,
+                    "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
+                    "last_chunk_pause_ms": bot.last_chunk_pause_ms,
+                    "min_delay_ms": bot.min_delay_ms,
+                    "max_delay_ms": bot.max_delay_ms,
+                }
             except Bot.DoesNotExist:
                 use_chunks = True  # Default to chunking
                 use_humanlike_delay = True  # Default to delay
+                delay_config = {
+                    "typing_speed_min_ms": 100,
+                    "typing_speed_max_ms": 200,
+                    "question_thinking_ms": 300,
+                    "first_chunk_thinking_ms": 600,
+                    "last_chunk_pause_ms": 100,
+                    "min_delay_ms": 200,
+                    "max_delay_ms": 800,
+                }
 
             # Apply chunking if enabled
             if use_chunks:
@@ -137,6 +155,7 @@ class FollowupAPIView(View):
                     "bot_name": bot_name,
                     "is_followup": True,
                     "humanlike_delay": use_humanlike_delay,
+                    "delay_config": delay_config,
                 },
                 status=200,
             )

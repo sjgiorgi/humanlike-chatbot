@@ -97,6 +97,36 @@ class Bot(models.Model):
         default=True,
         help_text="If true, apply human-like typing delays; if false, show messages instantly",
     )
+    
+    # Humanlike delay configuration (bot-specific)
+    typing_speed_min_ms = models.IntegerField(
+        default=100,
+        help_text="Minimum milliseconds per character for typing speed (base delay)",
+    )
+    typing_speed_max_ms = models.IntegerField(
+        default=200,
+        help_text="Maximum milliseconds per character for typing speed (base delay)",
+    )
+    question_thinking_ms = models.IntegerField(
+        default=300,
+        help_text="Additional milliseconds for chunks containing questions",
+    )
+    first_chunk_thinking_ms = models.IntegerField(
+        default=600,
+        help_text="Additional milliseconds for the first chunk (thinking time)",
+    )
+    last_chunk_pause_ms = models.IntegerField(
+        default=100,
+        help_text="Additional milliseconds for the last chunk",
+    )
+    min_delay_ms = models.IntegerField(
+        default=200,
+        help_text="Minimum delay in milliseconds (when backend is fast)",
+    )
+    max_delay_ms = models.IntegerField(
+        default=800,
+        help_text="Maximum delay in milliseconds (when backend is slow)",
+    )
 
     # Follow-up on idle settings
     follow_up_on_idle = models.BooleanField(

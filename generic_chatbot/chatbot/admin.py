@@ -284,13 +284,14 @@ class BotAdmin(BaseAdmin):
         "avatar_type",
         "has_initial_utterance",
         "chunk_messages",
+        "humanlike_delay",
         "follow_up_on_idle",
         "get_persona_count",
         "avatar_preview",
     )
     list_display_links = ("name",)
     search_fields = ("name", "model_type", "model_id")
-    list_filter = ("model_type", "avatar_type", "chunk_messages", "follow_up_on_idle", "personas")
+    list_filter = ("model_type", "avatar_type", "chunk_messages", "humanlike_delay", "follow_up_on_idle", "personas")
     ordering = ("name",)
     filter_horizontal = ["personas"]
     
@@ -352,8 +353,21 @@ class BotAdmin(BaseAdmin):
             "description": "Upload and manage bot avatar image",
         }),
         ("Response Settings", {
-            "fields": ("chunk_messages",),
-            "description": "Control how bot responses are formatted",
+            "fields": ("chunk_messages", "humanlike_delay"),
+            "description": "Control how bot responses are formatted and displayed",
+        }),
+        ("Humanlike Delay Configuration", {
+            "fields": (
+                "typing_speed_min_ms", 
+                "typing_speed_max_ms", 
+                "question_thinking_ms", 
+                "first_chunk_thinking_ms", 
+                "last_chunk_pause_ms", 
+                "min_delay_ms", 
+                "max_delay_ms"
+            ),
+            "description": "Fine-tune the humanlike typing delay parameters",
+            "classes": ("collapse",),
         }),
         ("Follow-up Settings", {
             "fields": ("follow_up_on_idle", "idle_time_minutes", "follow_up_instruction_prompt"),
