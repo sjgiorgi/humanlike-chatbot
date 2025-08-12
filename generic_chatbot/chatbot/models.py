@@ -69,6 +69,13 @@ class Utterance(models.Model):
         blank=True,
         help_text="The instruction prompt (bot prompt + persona) that was passed to the LLM for this utterance"
     )
+    
+    # Store the chat history that was passed to the LLM for this utterance
+    chat_history_used = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The chat history (formatted as JSON) that was actually passed to the LLM for this utterance"
+    )
 
     def __str__(self):
         return f"{self.speaker_id}: {self.text[:50]}"
@@ -152,6 +159,12 @@ class Bot(models.Model):
     recurring_followup = models.BooleanField(
         default=False,
         help_text="If true, bot will keep sending follow-up messages while user is idle. If false, bot will only send one follow-up per idle period.",
+    )
+
+    # Transcript length control
+    max_transcript_length = models.IntegerField(
+        default=0,
+        help_text="Maximum number of messages to include in chat history. 0 = no chat history (only current message), 1+ = include that many most recent messages, negative = unlimited history.",
     )
 
     # Many-to-many relationship with personas

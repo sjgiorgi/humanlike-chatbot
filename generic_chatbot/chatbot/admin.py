@@ -232,6 +232,7 @@ class UtteranceAdmin(BaseAdmin):
         "participant_id",
         "text_preview",
         "instruction_prompt_preview",
+        "chat_history_used_preview",
         "created_time",
         "is_voice",
     )
@@ -258,14 +259,27 @@ class UtteranceAdmin(BaseAdmin):
     def instruction_prompt_preview(self, obj):
         if obj.instruction_prompt and obj.instruction_prompt.strip():
             preview = obj.instruction_prompt[:100] + "..." if len(obj.instruction_prompt) > 100 else obj.instruction_prompt
-            return format_html('<span class="instruction-preview" title="{}">{}</span>', obj.instruction_prompt, preview)
-        return format_html('<span class="no-instruction">No instruction prompt</span>')
+            return preview
+        return "No instruction prompt"
     instruction_prompt_preview.short_description = "Instruction Prompt"
+    
+    def chat_history_used_preview(self, obj):
+        if obj.chat_history_used and obj.chat_history_used.strip():
+            try:
+                # Parse JSON to get message count
+                import json
+                history_data = json.loads(obj.chat_history_used)
+                message_count = len(history_data)
+                return f"{message_count} messages"
+            except (json.JSONDecodeError, TypeError):
+                return obj.chat_history_used[:50] + "..." if len(obj.chat_history_used) > 50 else obj.chat_history_used
+        return "No chat history"
+    chat_history_used_preview.short_description = "Chat History Used"
 
     fieldsets = (
         ("Message Content", {
-            "fields": ("conversation", "speaker_id", "text", "instruction_prompt"),
-            "description": "Message content and the instruction prompt (bot prompt + persona) that was passed to the LLM. For followup messages, the followup instruction prompt is sent as an admin message, not included in the system prompt.",
+            "fields": ("conversation", "speaker_id", "text", "instruction_prompt", "chat_history_used"),
+            "description": "Message content, instruction prompt (bot prompt + persona), and chat history that was passed to the LLM. For followup messages, the followup instruction prompt is sent as an admin message, not included in the system prompt.",
         }),
         ("Participant Information", {
             "fields": ("bot_name", "participant_id"),
@@ -296,6 +310,7 @@ class BotAdmin(BaseAdmin):
         "humanlike_delay",
         "follow_up_on_idle",
         "recurring_followup",
+        "max_transcript_length",
         "get_persona_count",
         "avatar_preview",
     )
@@ -363,8 +378,8 @@ class BotAdmin(BaseAdmin):
             "description": "Upload and manage bot avatar image",
         }),
         ("Response Settings", {
-            "fields": ("chunk_messages", "humanlike_delay"),
-            "description": "Control how bot responses are formatted and displayed",
+            "fields": ("chunk_messages", "humanlike_delay", "max_transcript_length"),
+            "description": "Control how bot responses are formatted and displayed. Max transcript length controls how many previous messages to include in chat history. 0 = no chat history (only current message), 1+ = include that many most recent messages.",
         }),
         ("Humanlike Delay Configuration", {
             "fields": (
