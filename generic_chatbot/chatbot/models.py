@@ -62,6 +62,13 @@ class Utterance(models.Model):
     )  # path to saved audio
     # to distinguish voice vs text utterances
     is_voice = models.BooleanField(default=False)
+    
+    # Store the instruction prompt that was passed to the LLM for this utterance
+    instruction_prompt = models.TextField(
+        null=True, 
+        blank=True,
+        help_text="The instruction prompt (bot prompt + persona) that was passed to the LLM for this utterance"
+    )
 
     def __str__(self):
         return f"{self.speaker_id}: {self.text[:50]}"
@@ -141,6 +148,10 @@ class Bot(models.Model):
         blank=True,
         null=True,
         help_text="Instructions for generating follow-up messages when user is idle",
+    )
+    recurring_followup = models.BooleanField(
+        default=False,
+        help_text="If true, bot will keep sending follow-up messages while user is idle. If false, bot will only send one follow-up per idle period.",
     )
 
     # Many-to-many relationship with personas

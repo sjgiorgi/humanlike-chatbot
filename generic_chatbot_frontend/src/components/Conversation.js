@@ -17,6 +17,7 @@ const Conversation = () => {
   const [botConfig, setBotConfig] = useState(null);
   const [idleTimer, setIdleTimer] = useState(null);
   const [lastUserActivity, setLastUserActivity] = useState(Date.now());
+  const [followupRequested, setFollowupRequested] = useState(false);
 
   const apiUrl = process.env.REACT_APP_API_URL;
   const params = new URLSearchParams(window.location.search);
@@ -123,24 +124,38 @@ const Conversation = () => {
     surveyMetaData,
   ]);
 
-  // Idle detection and follow-up logic
+    // Idle detection and follow-up logic - only based on conversation data
   useEffect(() => {
     if (!botConfig?.follow_up_on_idle || !botConfig?.idle_time_minutes) {
       return;
     }
 
+    let currentTimer = null;
+    let isFollowupRequested = false;
+
     const resetIdleTimer = () => {
-      setLastUserActivity(Date.now());
-      if (idleTimer) {
-        clearTimeout(idleTimer);
+      if (currentTimer) {
+        clearTimeout(currentTimer);
+        currentTimer = null;
       }
+      isFollowupRequested = false;
+      setFollowupRequested(false);
     };
 
     const startIdleTimer = () => {
       const idleTimeMs = botConfig.idle_time_minutes * 60 * 1000;
-      const timer = setTimeout(async () => {
+      currentTimer = setTimeout(async () => {
+        // Prevent multiple followup requests
+        if (isFollowupRequested) {
+          console.log("🕐 Followup already requested, skipping...");
+          return;
+        }
+        
         try {
           console.log("🕐 User idle detected, requesting follow-up...");
+          isFollowupRequested = true;
+          setFollowupRequested(true);
+          
           const res = await fetch(`${apiUrl}/followup/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -162,39 +177,27 @@ const Conversation = () => {
           } else {
             const error = await res.json();
             console.warn("Follow-up request failed:", error.error);
+            isFollowupRequested = false;
+            setFollowupRequested(false); // Reset flag on error
           }
         } catch (err) {
           console.error("Error requesting follow-up:", err);
+          isFollowupRequested = false;
+          setFollowupRequested(false); // Reset flag on error
         }
       }, idleTimeMs);
-      setIdleTimer(timer);
-    };
-
-    // Reset timer on user activity
-    const handleUserActivity = () => {
-      resetIdleTimer();
-      startIdleTimer();
     };
 
     // Start initial timer
     startIdleTimer();
 
-    // Add event listeners for user activity
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    events.forEach(event => {
-      document.addEventListener(event, handleUserActivity, true);
-    });
-
     // Cleanup
     return () => {
-      if (idleTimer) {
-        clearTimeout(idleTimer);
+      if (currentTimer) {
+        clearTimeout(currentTimer);
       }
-      events.forEach(event => {
-        document.removeEventListener(event, handleUserActivity, true);
-      });
     };
-  }, [botConfig, botName, conversationId, participantId, apiUrl, idleTimer]);
+  }, [botConfig, botName, conversationId, participantId, apiUrl, messages.length]);
 
   const getHumanDelay = (chunk, chunkIndex, totalChunks, backendTimeMs, delayConfig = null) => {
     // Use bot-specific config or fallback to defaults
@@ -286,8 +289,24 @@ const Conversation = () => {
     }
     console.log("✉️ Enqueue user message:", message);
 
-    // Reset idle timer when user sends a message
-    setLastUserActivity(Date.now());
+    // Reset followup timer when user sends a message
+    setFollowupRequested(false); // Reset followup flag when user sends message
+    
+    // Reset the "followup sent once" flag when user sends a message
+    // This allows followup to trigger again after user interaction
+    if (botConfig?.follow_up_on_idle && !botConfig?.recurring_followup) {
+      // Clear the server-side flag that prevents recurring followups
+      fetch(`${apiUrl}/followup/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bot_name: botName,
+          conversation_id: conversationId,
+          participant_id: participantId,
+          reset_flag: true, // Signal to reset the "sent once" flag
+        }),
+      }).catch(err => console.log("Failed to reset followup flag:", err));
+    }
 
     setMessages((prev) => [...prev, { sender: "You", content: message }]);
     setMessage("");

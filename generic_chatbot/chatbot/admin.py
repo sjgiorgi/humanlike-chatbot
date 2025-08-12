@@ -231,6 +231,7 @@ class UtteranceAdmin(BaseAdmin):
         "bot_name",
         "participant_id",
         "text_preview",
+        "instruction_prompt_preview",
         "created_time",
         "is_voice",
     )
@@ -253,10 +254,18 @@ class UtteranceAdmin(BaseAdmin):
         speaker_class = "user-message" if obj.speaker_id == "user" else "bot-message"
         return format_html('<span class="message-preview {}" title="{}">{}</span>', speaker_class, obj.text, preview)
     text_preview.short_description = "Message"
+    
+    def instruction_prompt_preview(self, obj):
+        if obj.instruction_prompt and obj.instruction_prompt.strip():
+            preview = obj.instruction_prompt[:100] + "..." if len(obj.instruction_prompt) > 100 else obj.instruction_prompt
+            return format_html('<span class="instruction-preview" title="{}">{}</span>', obj.instruction_prompt, preview)
+        return format_html('<span class="no-instruction">No instruction prompt</span>')
+    instruction_prompt_preview.short_description = "Instruction Prompt"
 
     fieldsets = (
         ("Message Content", {
-            "fields": ("conversation", "speaker_id", "text"),
+            "fields": ("conversation", "speaker_id", "text", "instruction_prompt"),
+            "description": "Message content and the instruction prompt (bot prompt + persona) that was passed to the LLM. For followup messages, the followup instruction prompt is sent as an admin message, not included in the system prompt.",
         }),
         ("Participant Information", {
             "fields": ("bot_name", "participant_id"),
@@ -286,12 +295,13 @@ class BotAdmin(BaseAdmin):
         "chunk_messages",
         "humanlike_delay",
         "follow_up_on_idle",
+        "recurring_followup",
         "get_persona_count",
         "avatar_preview",
     )
     list_display_links = ("name",)
     search_fields = ("name", "model_type", "model_id")
-    list_filter = ("model_type", "avatar_type", "chunk_messages", "humanlike_delay", "follow_up_on_idle", "personas")
+    list_filter = ("model_type", "avatar_type", "chunk_messages", "humanlike_delay", "follow_up_on_idle", "recurring_followup", "personas")
     ordering = ("name",)
     filter_horizontal = ["personas"]
     
@@ -370,8 +380,8 @@ class BotAdmin(BaseAdmin):
             "classes": ("collapse",),
         }),
         ("Follow-up Settings", {
-            "fields": ("follow_up_on_idle", "idle_time_minutes", "follow_up_instruction_prompt"),
-            "description": "Configure automatic follow-up messages when users are idle",
+            "fields": ("follow_up_on_idle", "idle_time_minutes", "follow_up_instruction_prompt", "recurring_followup"),
+            "description": "Configure automatic follow-up messages when users are idle. The follow-up instruction prompt is sent as an admin message to the LLM, not included in the system prompt.",
         }),
     )
     
