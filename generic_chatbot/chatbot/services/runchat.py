@@ -1,3 +1,4 @@
+import json
 import logging
 
 from asgiref.sync import sync_to_async
@@ -48,7 +49,7 @@ def generate_system_prompt(bot, selected_persona=None):
 
 
 async def save_chat_to_db(
-    conversation_id, speaker_id, text, bot_name=None, participant_id=None, instruction_prompt=None,
+    conversation_id, speaker_id, text, bot_name=None, participant_id=None, instruction_prompt=None, chat_history_used=None,
 ):
     """
     Save chat messages asynchronously to the Utterance table.
@@ -65,6 +66,7 @@ async def save_chat_to_db(
             participant_id=participant_id,
             text=text,
             instruction_prompt=instruction_prompt,
+            chat_history_used=chat_history_used,
         )
 
     except Conversation.DoesNotExist:
@@ -135,21 +137,20 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
             logger.warning(f"Failed to load conversation history from database: {e}")
             conversation_history = []
 
-    # Append new message
-    conversation_history.append({"role": "user", "content": message})
-
-    # Apply transcript length limit if configured
+    # Apply transcript length limit to history only (before adding new message)
     if bot.max_transcript_length > 0:
-        # Keep only the latest messages up to the limit
-        # We want to keep the most recent messages, so we take from the end
+        # Keep only the latest messages from history up to the limit
         conversation_history = conversation_history[-bot.max_transcript_length:]
-        logger.info(f"Limited transcript to {len(conversation_history)} messages (max: {bot.max_transcript_length})")
+        logger.info(f"Limited history to {len(conversation_history)} messages (max: {bot.max_transcript_length})")
     elif bot.max_transcript_length == 0:
-        # 0 means no chat history - only keep the current message
-        conversation_history = [conversation_history[-1]]  # Only the new message
+        # 0 means no chat history - clear history
+        conversation_history = []
         logger.info(f"No chat history - using only current message")
     else:
-        logger.info(f"No transcript limit applied, using all {len(conversation_history)} messages")
+        logger.info(f"No transcript limit applied, using all {len(conversation_history)} messages from history")
+
+    # Append new message after applying transcript limit
+    conversation_history.append({"role": "user", "content": message})
 
     # Format for Kani
     formatted_history = [
@@ -186,10 +187,14 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
 
     response_text = response_text.strip()
 
+    # Capture the chat history that was actually used (before appending bot response)
+    # Store only the chat history sent to LLM (excluding the new user message)
+    chat_history_json = json.dumps(conversation_history[:-1], indent=2)
+    
     # Append bot response
     conversation_history.append({"role": "assistant", "content": response_text})
     cache.set(cache_key, conversation_history, timeout=3600)
-
+    
     # Save to DB (but not followup requests)
     if not message.startswith("[FOLLOW-UP REQUEST]"):
         await save_chat_to_db(
@@ -207,6 +212,7 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
         bot_name=bot.name,
         participant_id=None,
         instruction_prompt=system_prompt,
+        chat_history_used=chat_history_json,
     )
 
     return response_text
