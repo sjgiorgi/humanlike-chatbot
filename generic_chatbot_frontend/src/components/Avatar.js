@@ -8,13 +8,17 @@ function Avatar() {
   const navigate = useNavigate();
 
   const BASE_URL = process.env.REACT_APP_API_URL;
-  const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+  const allowedTypes = {
+    "image/png": "png", 
+    "image/jpeg": "jpeg", 
+    "image/jpg": "jpg"
+  };
 
 
   const handleUpload = async () => {
     if (!file) return alert("Please select a file first");
     
-    if (!allowedTypes.includes(file.type)) {
+    if (!Object.keys(allowedTypes).includes(file.type)) {
       return alert("Please upload image in PNG or JPEG/JPG format");
     }
 
@@ -29,10 +33,10 @@ function Avatar() {
 
     try {
       // 1. Get presigned URL
-      console.log(file.type)
+      const newFileName = `${participantId}_${conversationId}.${allowedTypes[file.type]}`
 
       const res = await fetch(
-        `${BASE_URL}/avatar-upload/?filename=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(file.type)}`
+        `${BASE_URL}/avatar-upload/?filename=${encodeURIComponent(newFileName)}&content_type=${encodeURIComponent(file.type)}`
       );
       const { s3_url, file_url } = await res.json();
 
@@ -54,8 +58,9 @@ function Avatar() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bot_name: botName,
+          participant_id: participantId,
           conversation_id: conversationId,
-          image_path: file.name,
+          image_path: newFileName,
         }),
       });
       console.log(imageUpload)
