@@ -48,7 +48,7 @@ def generate_system_prompt(bot, selected_persona=None):
 
 
 async def save_chat_to_db(
-    conversation_id, speaker_id, text, bot_name=None, participant_id=None,
+    conversation_id, speaker_id, text, bot_name=None, participant_id=None, instruction_prompt=None,
 ):
     """
     Save chat messages asynchronously to the Utterance table.
@@ -64,6 +64,7 @@ async def save_chat_to_db(
             bot_name=bot_name,
             participant_id=participant_id,
             text=text,
+            instruction_prompt=instruction_prompt,
         )
 
     except Conversation.DoesNotExist:
@@ -80,6 +81,11 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     Runs moderation on incoming message before processing.
     Returns the bot response text.
     """
+    # Prevent followup requests from being processed as regular user messages
+    if message.startswith("[FOLLOW-UP REQUEST]"):
+        logger.warning(f"Followup request detected in regular chat round, ignoring: {message[:50]}...")
+        return "I'm sorry, but I can't process followup requests through the regular chat. Please use the appropriate followup mechanism."
+    
     # Fetch bot object with personas prefetched
     bot = await sync_to_async(Bot.objects.prefetch_related("personas").get)(name=bot_name)
 
@@ -103,6 +109,7 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
             text=warning_text,
             bot_name=bot.name,
             participant_id=None,
+            instruction_prompt=bot.prompt,  # Use bot prompt for moderation responses
         )
         return warning_text
 
@@ -170,14 +177,15 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     conversation_history.append({"role": "assistant", "content": response_text})
     cache.set(cache_key, conversation_history, timeout=3600)
 
-    # Save to DB
-    await save_chat_to_db(
-        conversation_id=conversation_id,
-        speaker_id="user",
-        text=message,
-        bot_name=None,
-        participant_id=participant_id,
-    )
+    # Save to DB (but not followup requests)
+    if not message.startswith("[FOLLOW-UP REQUEST]"):
+        await save_chat_to_db(
+            conversation_id=conversation_id,
+            speaker_id="user",
+            text=message,
+            bot_name=None,
+            participant_id=participant_id,
+        )
 
     await save_chat_to_db(
         conversation_id=conversation_id,
@@ -185,6 +193,7 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
         text=response_text,
         bot_name=bot.name,
         participant_id=None,
+        instruction_prompt=system_prompt,
     )
 
     return response_text
