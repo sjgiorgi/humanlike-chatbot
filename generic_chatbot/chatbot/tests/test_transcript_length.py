@@ -123,7 +123,8 @@ class TestTranscriptLengthControl(TestCase):
         await self.create_test_utterances_async(15)
         
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Test response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor
@@ -156,7 +157,8 @@ class TestTranscriptLengthControl(TestCase):
         await self.create_test_utterances_async(15)
         
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Test response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor
@@ -194,7 +196,8 @@ class TestTranscriptLengthControl(TestCase):
         await self.create_test_utterances_async(3)
         
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Test response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor
@@ -227,7 +230,8 @@ class TestTranscriptLengthControl(TestCase):
         await self.create_test_utterances_async(5)
         
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Test response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor
@@ -257,7 +261,8 @@ class TestTranscriptLengthControl(TestCase):
     async def test_empty_conversation_with_limit(self, mock_save, mock_moderate, mock_engine):
         """Test with empty conversation and transcript limit"""
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Test response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor
@@ -282,7 +287,7 @@ class TestTranscriptLengthControl(TestCase):
             assert "First message" in [msg.content for msg in chat_history]
 
     @patch('chatbot.services.followup.get_or_create_engine')
-    @patch('chatbot.services.moderation.moderate_message')
+    @patch('chatbot.services.followup.moderate_message')
     @patch('chatbot.services.followup.save_chat_to_db')
     async def test_followup_with_transcript_limit(self, mock_save, mock_moderate, mock_engine):
         """Test that followup also respects transcript length limits"""
@@ -290,7 +295,8 @@ class TestTranscriptLengthControl(TestCase):
         await self.create_test_utterances_async(15)
         
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Followup response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor
@@ -328,7 +334,8 @@ class TestTranscriptLengthControl(TestCase):
         await self.create_test_utterances_async(15)
         
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Test response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor
@@ -361,7 +368,8 @@ class TestTranscriptLengthControl(TestCase):
         await self.create_test_utterances_async(10)
         
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Test response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor
@@ -404,7 +412,8 @@ class TestTranscriptLengthControl(TestCase):
         await self.create_test_utterances_async(5)
         
         # Mock the engine and Kani
-        mock_kani = self.create_mock_kani()
+        mock_kani = AsyncMock()
+        mock_kani.full_round.return_value = [MagicMock(text="Test response")]
         mock_engine.return_value = MagicMock()
         
         # Mock Kani constructor

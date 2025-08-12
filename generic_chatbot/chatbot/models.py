@@ -154,6 +154,12 @@ class Bot(models.Model):
         help_text="If true, bot will keep sending follow-up messages while user is idle. If false, bot will only send one follow-up per idle period.",
     )
 
+    # Transcript length control
+    max_transcript_length = models.IntegerField(
+        default=0,
+        help_text="Maximum number of messages to include in chat history. 0 = no chat history (only current message), 1+ = include that many most recent messages, negative = unlimited history.",
+    )
+
     # Many-to-many relationship with personas
     personas = models.ManyToManyField(
         Persona,

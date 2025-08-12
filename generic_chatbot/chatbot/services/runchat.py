@@ -138,6 +138,19 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     # Append new message
     conversation_history.append({"role": "user", "content": message})
 
+    # Apply transcript length limit if configured
+    if bot.max_transcript_length > 0:
+        # Keep only the latest messages up to the limit
+        # We want to keep the most recent messages, so we take from the end
+        conversation_history = conversation_history[-bot.max_transcript_length:]
+        logger.info(f"Limited transcript to {len(conversation_history)} messages (max: {bot.max_transcript_length})")
+    elif bot.max_transcript_length == 0:
+        # 0 means no chat history - only keep the current message
+        conversation_history = [conversation_history[-1]]  # Only the new message
+        logger.info(f"No chat history - using only current message")
+    else:
+        logger.info(f"No transcript limit applied, using all {len(conversation_history)} messages")
+
     # Format for Kani
     formatted_history = [
         ChatMessage(
