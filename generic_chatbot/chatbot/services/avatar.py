@@ -34,7 +34,7 @@ def make_square(image, fill_color=(255, 255, 255, 0)):
     return new_image.resize((512, 512))
 
 
-def generate_avatar(file, bot_name, avatar_type, conversation_id=None):
+def generate_avatar(file, bot_name, avatar_type, conversation_id=None, participant_id=None):
     try:
         # Handle both PIL Image objects and Django UploadedFile objects
         if hasattr(file, "read"):
@@ -68,7 +68,7 @@ def generate_avatar(file, bot_name, avatar_type, conversation_id=None):
             response = client.images.edit(
                 model="gpt-image-1",
                 image=[image_file],  # Pass as list as in original
-                prompt="Create a fun and friendly bitmoji-style avatar based on this person's image. Capture the main facial features like hair style, eye shape, and skin tone, but simplify and stylize them with smooth lines and bright colors. The avatar should look cartoonish, approachable, and suitable as a profile picture. The output image's size should be square",
+                prompt=os.getenv("CHATBOT_AVATAR_PROMPT"),
             )
             
             # Check if response has data
@@ -103,8 +103,8 @@ def generate_avatar(file, bot_name, avatar_type, conversation_id=None):
             return None, None
             
         # Set the image name with timestamp to make it unique
-        image.name = f"{bot_name}_{avatar_type}_{conversation_id if conversation_id else ''}_{int(datetime.now().timestamp())!s}_avatar.png"
-        
+        image.name = f"{participant_id+'_' if participant_id else ''}{conversation_id+'_' if conversation_id else ''}{bot_name}_{avatar_type}_{int(datetime.now().timestamp())!s}_avatar.png"
+
         return image
     except Exception as e:
         logger.exception(f"[ERROR] {e}")
@@ -199,6 +199,7 @@ class AvatarAPIView(View):
             bot_name = data.get("bot_name")
             bot = Bot.objects.get(name=bot_name)
             conversation_id = data.get("conversation_id")
+            participant_id = data.get("participant_id")
             image_url = data.get("image_path")
             image_key = None
 
@@ -223,10 +224,12 @@ class AvatarAPIView(View):
                     bot_name,
                     bot.avatar_type,
                     conversation_id,
+                    participant_id
                 )
                 image_key = image.name if hasattr(image, "name") else f"{bot_name}_{int(time.time())}.png"
                 upload(image, image_key)
-                delete("uploads", image_url)
+                # Not deleting images - will be done manually
+                # delete("uploads", image_url)
                 Avatar.objects.create(
                     bot=bot,
                     bot_conversation=conversation_id,
@@ -425,7 +428,8 @@ class AvatarDetailAPIView(View):
                 )
                 image_key = edit_image.name if hasattr(edit_image, "name") else f"{bot.name}_{int(time.time())}.png"
                 upload(edit_image, image_key)
-                delete("uploads", image_url)
+                # Not deleting images - will be done manually
+                # delete("uploads", image_url)
 
             avatar.bot = bot
             avatar.chatbot_avatar = image_key
