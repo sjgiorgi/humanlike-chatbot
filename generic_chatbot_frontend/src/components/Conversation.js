@@ -154,9 +154,10 @@ const Conversation = () => {
           if (res.ok) {
             const data = await res.json();
             const chunks = data.response_chunks || [data.response];
-            console.log(`📝 Follow-up response has ${chunks.length} chunks`);
+            const useHumanlikeDelay = data.humanlike_delay !== false; // Default to true if not specified
+            console.log(`📝 Follow-up response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}`);
             setIsTyping(true);
-            revealChunks(chunks);
+            revealChunks(chunks, 0, useHumanlikeDelay);
           } else {
             const error = await res.json();
             console.warn("Follow-up request failed:", error.error);
@@ -221,7 +222,7 @@ const Conversation = () => {
   };
 
   // Reveal chunks one by one
-  const revealChunks = (chunks, backendTimeMs = 0) => {
+  const revealChunks = (chunks, backendTimeMs = 0, useHumanlikeDelay = true) => {
     const valid = chunks.filter(
       (c) => typeof c === "string" && c.trim().length
     );
@@ -231,6 +232,19 @@ const Conversation = () => {
       return;
     }
 
+    // If humanlike delay is disabled, show all chunks instantly
+    if (!useHumanlikeDelay) {
+      valid.forEach((chunk) => {
+        setMessages((prev) => [
+          ...prev,
+          { sender: "AI Chatbot", content: chunk },
+        ]);
+      });
+      setIsTyping(false);
+      return;
+    }
+
+    // Apply humanlike delays
     let cumulative = 0;
     const totalChunks = valid.length;
 
@@ -292,9 +306,10 @@ const Conversation = () => {
       console.log(`⏱️ Backend request took ${backendTimeMs}ms`);
       
       const chunks = data.response_chunks || [data.response];
-      console.log(`📝 Response has ${chunks.length} chunks`);
+      const useHumanlikeDelay = data.humanlike_delay !== false; // Default to true if not specified
+      console.log(`📝 Response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}`);
       setIsTyping(true);
-      revealChunks(chunks, backendTimeMs);
+      revealChunks(chunks, backendTimeMs, useHumanlikeDelay);
     } catch (err) {
       console.error("Error sending message:", err);
       alert("An error occurred. Please try again.");

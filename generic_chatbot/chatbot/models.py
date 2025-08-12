@@ -92,6 +92,12 @@ class Bot(models.Model):
         help_text="If true, split responses into human-like chunks; if false, send as one blob",
     )
 
+    # Humanlike delay control (bot-specific)
+    humanlike_delay = models.BooleanField(
+        default=True,
+        help_text="If true, apply human-like typing delays; if false, show messages instantly",
+    )
+
     # Follow-up on idle settings
     follow_up_on_idle = models.BooleanField(
         default=False,
@@ -154,11 +160,4 @@ class Avatar(models.Model):
         return f"Avatar for Conversation {self.bot.name} {self.bot.avatar_type} {self.condition} {self.participant_avatar} {self.chatbot_avatar}"
 
 
-class Control(models.Model):
-    chunk_messages = models.BooleanField(
-        default=True,
-        help_text="If true, split into human-like chunks; if false, send as one blob",
-    )
 
-    def __str__(self):
-        return f"Chunks {'on' if self.chunk_messages else 'off'}"

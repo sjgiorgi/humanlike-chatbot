@@ -114,12 +114,14 @@ class FollowupAPIView(View):
             if error:
                 return JsonResponse({"error": error}, status=400)
 
-            # Get bot configuration for chunking
+            # Get bot configuration for chunking and delay
             try:
                 bot = await sync_to_async(Bot.objects.get)(name=bot_name)
                 use_chunks = bot.chunk_messages
+                use_humanlike_delay = bot.humanlike_delay
             except Bot.DoesNotExist:
                 use_chunks = True  # Default to chunking
+                use_humanlike_delay = True  # Default to delay
 
             # Apply chunking if enabled
             if use_chunks:
@@ -134,6 +136,7 @@ class FollowupAPIView(View):
                     "response_chunks": response_chunks,
                     "bot_name": bot_name,
                     "is_followup": True,
+                    "humanlike_delay": use_humanlike_delay,
                 },
                 status=200,
             )
