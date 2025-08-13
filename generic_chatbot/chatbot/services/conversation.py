@@ -1,18 +1,78 @@
 import json
+import logging
+import random
 from datetime import datetime
-from django.views import View
-from django.views.decorators.csrf import csrf_exempt
+
+from asgiref.sync import async_to_sync
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
-from asgiref.sync import async_to_sync
-from ..models import Conversation, Bot
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+
+from ..models import Bot, Conversation, Utterance
 from .runchat import save_chat_to_db
-import logging
 
 logger = logging.getLogger(__name__)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+def randomly_select_persona(bot):
+    """
+    Randomly select one persona from the bot's assigned personas.
+    Returns None if no personas are assigned.
+    """
+    assigned_personas = list(bot.personas.all())
+    if assigned_personas:
+        selected_persona = random.choice(assigned_personas)
+        logger.info(f"Randomly selected persona '{selected_persona.name}' for bot '{bot.name}'")
+        return selected_persona
+    else:
+        logger.info(f"No personas assigned to bot '{bot.name}', using default behavior")
+        return None
+
+
+def load_conversation_history(conversation_id):
+    """
+    Load conversation history from database and populate cache.
+    Returns the conversation history as a list of messages.
+    """
+    try:
+        conversation = Conversation.objects.get(conversation_id=conversation_id)
+        utterances = Utterance.objects.filter(conversation=conversation).order_by("created_time")
+        
+        # Build conversation history for cache
+        conversation_history = []
+        messages = []
+        
+        for utterance in utterances:
+            role = "user" if utterance.speaker_id == "user" else "assistant"
+            content = utterance.text
+            
+            # Add to cache format
+            conversation_history.append({"role": role, "content": content})
+            
+            # Add to frontend format
+            messages.append({
+                "sender": "You" if role == "user" else "AI Chatbot",
+                "content": content,
+            })
+        
+        # Populate cache
+        cache_key = f"conversation_cache_{conversation_id}"
+        cache.set(cache_key, conversation_history, timeout=3600)
+        
+        logger.debug(f"Loaded {len(messages)} messages for conversation {conversation_id}")
+        return conversation, messages
+        
+    except Conversation.DoesNotExist:
+        logger.debug(f"Conversation {conversation_id} not found")
+        return None, []
+    except Exception as e:
+        logger.exception(f"Error loading conversation history: {e}")
+        return None, []
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class InitializeConversationAPIView(View):
     def post(self, request, *args, **kwargs):
         try:
@@ -22,7 +82,9 @@ class InitializeConversationAPIView(View):
                 data = json.loads(request.body)
             except Exception as parse_error:
                 logger.debug("JSON parse error: %s", parse_error)
-                return JsonResponse({"error": "Invalid JSON in request body."}, status=400)
+                return JsonResponse(
+                    {"error": "Invalid JSON in request body."}, status=400,
+                )
 
             logger.debug("Received JSON data: %r", data)
 
@@ -37,19 +99,42 @@ class InitializeConversationAPIView(View):
             if not bot_name or not conversation_id:
                 return JsonResponse(
                     {"error": "Both 'bot_name' and 'conversation_id' are required."},
-                    status=400
+                    status=400,
                 )
 
             try:
                 bot = Bot.objects.get(name=bot_name)
                 logger.debug("Found bot: %s", bot_name)
             except Bot.DoesNotExist:
-                return JsonResponse({"error": f"No bot found with the name '{bot_name}'."}, status=404)
+                return JsonResponse(
+                    {"error": f"No bot found with the name '{bot_name}'."}, status=404,
+                )
             except Exception:
                 logger.exception("Error fetching bot")
-                return JsonResponse({"error": "Error fetching the bot from the database."}, status=500)
+                return JsonResponse(
+                    {"error": "Error fetching the bot from the database."}, status=500,
+                )
 
-            # Save conversation
+            # Check if conversation already exists
+            existing_conversation, existing_messages = load_conversation_history(conversation_id)
+            
+            if existing_conversation:
+                logger.debug(f"Conversation {conversation_id} already exists, returning existing data")
+                return JsonResponse(
+                    {
+                        "conversation_id": conversation_id,
+                        "message": "Conversation loaded successfully.",
+                        "initial_utterance": existing_conversation.initial_utterance or "",
+                        "existing_messages": existing_messages,
+                        "is_existing": True,
+                    },
+                    status=200,
+                )
+
+            # Randomly select a persona for this conversation
+            selected_persona = randomly_select_persona(bot)
+            
+            # Create new conversation
             try:
                 Conversation.objects.create(
                     conversation_id=conversation_id,
@@ -61,13 +146,17 @@ class InitializeConversationAPIView(View):
                     survey_id=survey_id,
                     survey_meta_data=survey_meta_data,
                     started_time=datetime.now(),
+                    selected_persona=selected_persona,
                 )
-                logger.debug("Conversation created.")
+                logger.debug("Conversation created with persona: %s", selected_persona.name if selected_persona else "None")
             except Exception:
                 logger.exception("Error creating Conversation")
-                return JsonResponse({"error": "Failed to create Conversation."}, status=500)
+                return JsonResponse(
+                    {"error": "Failed to create Conversation."}, status=500,
+                )
 
             # ✅ Save bot's initial utterance as an assistant message
+            initial_messages = []
             if bot.initial_utterance and bot.initial_utterance.strip():
                 try:
                     async_to_sync(save_chat_to_db)(
@@ -75,19 +164,29 @@ class InitializeConversationAPIView(View):
                         speaker_id="assistant",
                         text=bot.initial_utterance.strip(),
                         bot_name=bot.name,
-                        participant_id=None
+                        participant_id=None,
                     )
                     logger.debug("Initial bot message saved to DB.")
-                except Exception:
-                    logger.exception("Failed to save initial bot message")
+                    
+                    # Add to initial messages for frontend
+                    initial_messages.append({
+                        "sender": "AI Chatbot",
+                        "content": bot.initial_utterance.strip(),
+                    })
+                except Exception as e:
+                    logger.exception("Failed to save initial bot message: %s", str(e))
 
-            return JsonResponse({
-                "conversation_id": conversation_id,
-                "message": "Conversation initialized successfully.",
-                "initial_utterance": bot.initial_utterance or ""
-            }, status=200)
+            return JsonResponse(
+                {
+                    "conversation_id": conversation_id,
+                    "message": "Conversation initialized successfully.",
+                    "initial_utterance": bot.initial_utterance or "",
+                    "existing_messages": initial_messages,
+                    "is_existing": False,
+                },
+                status=200,
+            )
 
         except Exception:
-            logger.exception(
-                "Unhandled exception in InitializeConversationAPIView")
+            logger.exception("Unhandled exception in InitializeConversationAPIView")
             return JsonResponse({"error": "Unexpected error occurred."}, status=500)

@@ -1,6 +1,12 @@
 import json
-from django.db import connection
+import logging
+
 from django.apps import apps
+from django.db import connection
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
+
 
 def load_config():
     """
@@ -8,18 +14,18 @@ def load_config():
     """
     try:
         # Load the JSON file
-        with open("config.json", "r") as file:
+        with open("config.json") as file:
             config = json.load(file)
 
         # Check if "bots" exists in the configuration
         bots = config.get("bots", [])
         if not bots:
-            print("No bots found in configuration.")
+            logger.warning("No bots found in configuration.")
             return config
 
         # Check if the database is ready
         if not connection.introspection.table_names():
-            print("Database not ready. Skipping bot loading.")
+            logger.warning("Database not ready. Skipping bot loading.")
             return config
 
         # Dynamically fetch the Bot model
@@ -32,22 +38,24 @@ def load_config():
         for bot in bots:
             if bot["name"] not in existing_bots:
                 if "model_type" not in bot or "model_id" not in bot:
-                    raise ValueError(f"Bot '{bot['name']}' is missing required 'model_type' or 'model_id'.")
-                
+                    raise ValueError(
+                        f"Bot '{bot['name']}' is missing required 'model_type' or 'model_id'.",
+                    )
+
                 Bot.objects.create(
-                    name=bot["name"], 
+                    name=bot["name"],
                     prompt=bot["prompt"],
                     model_type=bot["model_type"],  # Ensure model_type is set
-                    model_id=bot["model_id"]  # Ensure model_id is set
+                    model_id=bot["model_id"],  # Ensure model_id is set
                 )
-        
-        print("Bots loaded successfully.")
+
+        logger.info("Bots loaded successfully.")
         return config
-    
+
     except FileNotFoundError:
         raise RuntimeError("Configuration file 'config.json' not found.")
     except json.JSONDecodeError as e:
         raise RuntimeError(f"Error decoding 'config.json': {e}")
     except Exception as e:
-        print(f"Unexpected error loading config: {e}")
+        logger.error(f"Unexpected error loading config: {e}")
         raise

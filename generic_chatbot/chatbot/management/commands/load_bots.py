@@ -1,13 +1,16 @@
-from django.core.management.base import BaseCommand
-from chatbot.models import Bot
 import json
+
+from django.core.management.base import BaseCommand
+
+from chatbot.models import Bot
+
 
 class Command(BaseCommand):
     help = "Load bots from config.json into the database"
 
     def handle(self, *args, **kwargs):
         try:
-            with open("config.json", "r") as file:
+            with open("config.json") as file:
                 config_data = json.load(file)
 
             bots = config_data.get("bots", [])
@@ -19,9 +22,11 @@ class Command(BaseCommand):
                 Bot.objects.update_or_create(
                     name=bot["name"],
                     defaults={
-                        "prompt": bot["prompt"]
-                    }
+                        "prompt": bot["prompt"],
+                    },
                 )
-            self.stdout.write(self.style.SUCCESS("Bots successfully loaded into the database."))
+            self.stdout.write(
+                self.style.SUCCESS("Bots successfully loaded into the database."),
+            )
         except Exception as e:
             self.stderr.write(f"Error loading bots: {e}")

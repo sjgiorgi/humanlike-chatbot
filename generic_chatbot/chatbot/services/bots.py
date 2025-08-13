@@ -1,11 +1,19 @@
 import json
-from django.views import View
+import logging
+
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from ..models import Bot
 
-@method_decorator(csrf_exempt, name='dispatch')
+from ..models import Avatar, Bot
+from .s3_helper import delete
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class ListBotsAPIView(View):
     """
     GET  -> List all bots
@@ -14,10 +22,30 @@ class ListBotsAPIView(View):
 
     def get(self, request, *args, **kwargs):
         try:
-            bots = Bot.objects.values("id", "name", "model_type", "model_id", "prompt", "initial_utterance", "avatar_type")
+            bots = Bot.objects.values(
+                "id",
+                "name",
+                "model_type",
+                "model_id",
+                "prompt",
+                "initial_utterance",
+                "avatar_type",
+                "chunk_messages",
+                "humanlike_delay",
+                "typing_speed_min_ms",
+                "typing_speed_max_ms",
+                "question_thinking_ms",
+                "first_chunk_thinking_ms",
+                "last_chunk_pause_ms",
+                "min_delay_ms",
+                "max_delay_ms",
+                "follow_up_on_idle",
+                "idle_time_minutes",
+                "follow_up_instruction_prompt",
+            )
             return JsonResponse({"bots": list(bots)}, status=200)
         except Exception as e:
-            print(f"Error in ListBotsAPIView GET: {e}")
+            logger.error(f"Error in ListBotsAPIView GET: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     def post(self, request, *args, **kwargs):
@@ -39,7 +67,7 @@ class ListBotsAPIView(View):
                 model_id=model_id,
                 prompt=prompt,
                 initial_utterance=initial_utterance,
-                avatar_type=avatar_type
+                avatar_type=avatar_type,
             )
 
             return JsonResponse(
@@ -52,16 +80,16 @@ class ListBotsAPIView(View):
                     "initial_utterance": bot.initial_utterance,
                     "avatar_type": bot.avatar_type,
                 },
-                status=201
+                status=201,
             )
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON payload."}, status=400)
         except Exception as e:
-            print(f"Error in ListBotsAPIView POST: {e}")
+            logger.error(f"Error in ListBotsAPIView POST: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_exempt, name="dispatch")
 class BotDetailAPIView(View):
     """
     GET    -> Retrieve single bot by ID
@@ -80,12 +108,24 @@ class BotDetailAPIView(View):
                 "prompt": bot.prompt,
                 "initial_utterance": bot.initial_utterance,
                 "avatar_type": bot.avatar_type,
+                "chunk_messages": bot.chunk_messages,
+                "humanlike_delay": bot.humanlike_delay,
+                "typing_speed_min_ms": bot.typing_speed_min_ms,
+                "typing_speed_max_ms": bot.typing_speed_max_ms,
+                "question_thinking_ms": bot.question_thinking_ms,
+                "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
+                "last_chunk_pause_ms": bot.last_chunk_pause_ms,
+                "min_delay_ms": bot.min_delay_ms,
+                "max_delay_ms": bot.max_delay_ms,
+                "follow_up_on_idle": bot.follow_up_on_idle,
+                "idle_time_minutes": bot.idle_time_minutes,
+                "follow_up_instruction_prompt": bot.follow_up_instruction_prompt,
             }
             return JsonResponse(data, status=200)
         except Bot.DoesNotExist:
             return JsonResponse({"error": "Bot not found"}, status=404)
         except Exception as e:
-            print(f"Error in BotDetailAPIView GET: {e}")
+            logger.error(f"Error in BotDetailAPIView GET: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     def put(self, request, pk, *args, **kwargs):
@@ -102,22 +142,42 @@ class BotDetailAPIView(View):
             bot.prompt = data.get("prompt", bot.prompt)
             bot.initial_utterance = data.get("initial_utterance", bot.initial_utterance)
             bot.avatar_type = data.get("avatar_type", bot.avatar_type)
+            bot.chunk_messages = data.get("chunk_messages", bot.chunk_messages)
+            bot.humanlike_delay = data.get("humanlike_delay", bot.humanlike_delay)
+            bot.typing_speed_min_ms = data.get("typing_speed_min_ms", bot.typing_speed_min_ms)
+            bot.typing_speed_max_ms = data.get("typing_speed_max_ms", bot.typing_speed_max_ms)
+            bot.question_thinking_ms = data.get("question_thinking_ms", bot.question_thinking_ms)
+            bot.first_chunk_thinking_ms = data.get("first_chunk_thinking_ms", bot.first_chunk_thinking_ms)
+            bot.last_chunk_pause_ms = data.get("last_chunk_pause_ms", bot.last_chunk_pause_ms)
+            bot.min_delay_ms = data.get("min_delay_ms", bot.min_delay_ms)
+            bot.max_delay_ms = data.get("max_delay_ms", bot.max_delay_ms)
+            bot.follow_up_on_idle = data.get("follow_up_on_idle", bot.follow_up_on_idle)
+            bot.idle_time_minutes = data.get("idle_time_minutes", bot.idle_time_minutes)
+            bot.follow_up_instruction_prompt = data.get("follow_up_instruction_prompt", bot.follow_up_instruction_prompt)
             bot.save()
 
             return JsonResponse({"message": "Bot updated successfully."}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON payload."}, status=400)
         except Exception as e:
-            print(f"Error in BotDetailAPIView PUT: {e}")
+            logger.error(f"Error in BotDetailAPIView PUT: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     def delete(self, request, pk, *args, **kwargs):
         try:
             bot = Bot.objects.get(pk=pk)
+            try:
+                avatars = Avatar.objects.filter(bot=bot)
+                for avatar in avatars:
+                    if avatar.image_path:
+                        delete("avatar", avatar.image_path)
+                avatars.delete()
+            except Exception:
+                logger.error("[ERROR] failed to delete S3 images")
             bot.delete()
             return JsonResponse({"message": "Bot deleted successfully."}, status=204)
         except Bot.DoesNotExist:
             return JsonResponse({"error": "Bot not found"}, status=404)
         except Exception as e:
-            print(f"Error in BotDetailAPIView DELETE: {e}")
+            logger.error(f"Error in BotDetailAPIView DELETE: {e}")
             return JsonResponse({"error": str(e)}, status=500)

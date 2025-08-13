@@ -1,0 +1,1 @@
+// No custom JavaScript needed - Django defaults are sufficient 

@@ -24,7 +24,10 @@ build/
 # Django
 db.sqlite3
 /media/
-/staticfiles/
+media/
+*/media/
+# Keep staticfiles for production deployment
+# /staticfiles/
 
 # Environment Files
 .env
