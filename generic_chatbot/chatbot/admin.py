@@ -396,7 +396,7 @@ class BotAdmin(BaseAdmin):
         }),
         ("Follow-up Settings", {
             "fields": ("follow_up_on_idle", "idle_time_minutes", "follow_up_instruction_prompt", "recurring_followup"),
-            "description": "Configure automatic follow-up messages when users are idle. The follow-up instruction prompt is sent as an admin message to the LLM, not included in the system prompt.",
+            "description": "Configure automatic follow-up messages when users are idle. The follow-up instruction prompt is sent as an admin message to the LLM (not a user message) and cannot be empty when follow-up is enabled. Best practice: Write instructions that ask the bot to use available conversation context to write a natural follow-up message.",
         }),
     )
     
