@@ -5,7 +5,7 @@ from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from kani import ChatMessage, ChatRole, Kani
 
-from server.engine import get_or_create_engine
+from server.engine import get_or_create_engine, get_or_create_engine_from_model
 
 from ..models import Bot, Conversation, Utterance
 from .moderation import moderate_message
@@ -88,8 +88,8 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
         logger.warning(f"Followup request detected in regular chat round, ignoring: {message[:50]}...")
         return "I'm sorry, but I can't process followup requests through the regular chat. Please use the appropriate followup mechanism."
     
-    # Fetch bot object with personas prefetched
-    bot = await sync_to_async(Bot.objects.prefetch_related("personas").get)(name=bot_name)
+    # Fetch bot object with personas and ai_model prefetched
+    bot = await sync_to_async(Bot.objects.prefetch_related("personas", "ai_model__provider").get)(name=bot_name)
 
     # Moderate incoming message
     # Run in thread to avoid blocking
@@ -174,8 +174,8 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     logger.info(f"   Selected persona: {selected_persona.name if selected_persona and hasattr(selected_persona, 'name') else 'None'}")
     logger.info(f"   Final prompt length: {len(system_prompt)} characters")
 
-    # Run Kani
-    engine = get_or_create_engine(bot.model_type, bot.model_id, engine_instances)
+    # Run Kani - ai_model is now required
+    engine = get_or_create_engine_from_model(bot.ai_model, engine_instances)
     kani = Kani(engine, system_prompt=system_prompt, chat_history=formatted_history)
 
     latest_user_message = formatted_history[-1].content
