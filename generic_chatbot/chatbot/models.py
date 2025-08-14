@@ -271,8 +271,14 @@ class Bot(models.Model):
         null=True,
         blank=True,
     )
-    model_id = models.CharField(max_length=255, default="gpt-4", null=True, blank=True)
-    ai_model = models.ForeignKey(Model, on_delete=models.CASCADE, related_name="bots")
+    model_id = models.CharField(max_length=255, default="gpt-4o-mini", null=True, blank=True)
+    ai_model = models.ForeignKey(
+        Model, 
+        on_delete=models.CASCADE, 
+        related_name="bots",
+        null=False,
+        blank=False
+    )
     initial_utterance = models.TextField(blank=True, null=True)
 
     # New Column:
@@ -371,12 +377,12 @@ class Bot(models.Model):
         # Ensure default models exist
         Model.get_or_create_default_models()
 
-        # Return the first available model (preferably GPT-4o)
+        # Return the first available model (preferably GPT-4o Mini)
         try:
             return (
                 Model.objects.filter(
                     provider__name="OpenAI",
-                    model_id="gpt-4o",
+                    model_id="gpt-4o-mini",
                 ).first()
                 or Model.objects.first()
             )

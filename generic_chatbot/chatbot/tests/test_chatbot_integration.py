@@ -19,11 +19,11 @@ class TestChatbotIntegration(TestCase):
         # Get the OpenAI provider
         self.provider = ModelProvider.objects.get(name="OpenAI")
 
-        # Get an existing model for testing (preferably GPT-4o)
+        # Get an existing model for testing (preferably GPT-4o Mini)
         self.model = (
             Model.objects.filter(
                 provider=self.provider,
-                model_id="gpt-4o",
+                model_id="gpt-4o-mini",
             ).first()
             or Model.objects.filter(provider=self.provider).first()
         )
