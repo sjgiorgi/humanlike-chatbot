@@ -42,7 +42,7 @@ else
     exit 1
 fi
 
-# Load bots if necessary
+# Load bots (and ensure models exist)
 echo "Loading bots..."
 python manage.py load_bots
 if [ $? -eq 0 ]; then

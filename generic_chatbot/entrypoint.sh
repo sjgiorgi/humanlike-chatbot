@@ -9,7 +9,7 @@ python manage.py migrate --noinput
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Load your bots
+# Load your bots (and ensure models exist)
 echo "Loading bots..."
 python manage.py load_bots
 
