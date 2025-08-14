@@ -2,7 +2,7 @@ import json
 
 from django.core.management.base import BaseCommand
 
-from chatbot.models import Bot
+from chatbot.models import Bot, Model
 
 
 class Command(BaseCommand):
@@ -10,6 +10,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         try:
+            # Ensure default models exist first
+            self.stdout.write("Ensuring default models exist...")
+            Model.get_or_create_default_models()
+            self.stdout.write(self.style.SUCCESS("Default models loaded."))
+
             with open("config.json") as file:
                 config_data = json.load(file)
 
