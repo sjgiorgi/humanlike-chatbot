@@ -1,47 +1,46 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "../styles/Simulate.css";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../styles/Simulate.css';
 
 const Simulate = () => {
-  const [botName, setBotName] = useState("");
-  const [conversationId, setConversationId] = useState("");
-  const [participantId, setParticipantId] = useState("");
-  const [studyName, setStudyName] = useState("");
-  const [userGroup, setUserGroup] = useState("");
+  const [botName, setBotName] = useState('');
+  const [conversationId, setConversationId] = useState('');
+  const [participantId, setParticipantId] = useState('');
+  const [studyName, setStudyName] = useState('');
+  const [userGroup, setUserGroup] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
-  event.preventDefault();
+  const handleSubmit = event => {
+    event.preventDefault();
 
-  if (
-    !botName.trim() ||
-    !conversationId.trim() ||
-    !participantId.trim() ||
-    !studyName.trim() ||
-    !userGroup.trim()
-  ) {
-    alert("Please fill in all fields.");
-    return;
-  }
+    if (
+      !botName.trim() ||
+      !conversationId.trim() ||
+      !participantId.trim() ||
+      !studyName.trim() ||
+      !userGroup.trim()
+    ) {
+      alert('Please fill in all fields.');
+      return;
+    }
 
-  const isVoiceMode = botName.toLowerCase().includes("-voice");
+    const isVoiceMode = botName.toLowerCase().includes('-voice');
 
-  const route = isVoiceMode ? "/voice-conversation" : "/conversation";
+    const route = isVoiceMode ? '/voice-conversation' : '/conversation';
 
-  const params = new URLSearchParams({
-    bot_name: botName,
-    conversation_id: conversationId,
-    participant_id: participantId,
-    study_name: studyName,
-    user_group: userGroup,
-  });
+    const params = new URLSearchParams({
+      bot_name: botName,
+      conversation_id: conversationId,
+      participant_id: participantId,
+      study_name: studyName,
+      user_group: userGroup,
+    });
 
-  navigate(`${route}?${params.toString()}`);
-};
-
+    navigate(`${route}?${params.toString()}`);
+  };
 
   const handleEditBots = () => {
-    navigate("/edit-bots");
+    navigate('/edit-bots');
   };
 
   return (
@@ -53,7 +52,7 @@ const Simulate = () => {
             type="text"
             id="botName"
             value={botName}
-            onChange={(e) => setBotName(e.target.value)}
+            onChange={e => setBotName(e.target.value)}
             placeholder="Enter bot name"
             required
           />
@@ -65,7 +64,7 @@ const Simulate = () => {
             type="text"
             id="conversationId"
             value={conversationId}
-            onChange={(e) => setConversationId(e.target.value)}
+            onChange={e => setConversationId(e.target.value)}
             placeholder="Enter conversation ID"
             required
           />
@@ -77,7 +76,7 @@ const Simulate = () => {
             type="text"
             id="participantId"
             value={participantId}
-            onChange={(e) => setParticipantId(e.target.value)}
+            onChange={e => setParticipantId(e.target.value)}
             placeholder="Enter participant ID"
             required
           />
@@ -89,7 +88,7 @@ const Simulate = () => {
             type="text"
             id="studyName"
             value={studyName}
-            onChange={(e) => setStudyName(e.target.value)}
+            onChange={e => setStudyName(e.target.value)}
             placeholder="Enter study name"
             required
           />
@@ -101,7 +100,7 @@ const Simulate = () => {
             type="text"
             id="userGroup"
             value={userGroup}
-            onChange={(e) => setUserGroup(e.target.value)}
+            onChange={e => setUserGroup(e.target.value)}
             placeholder="Enter user group"
             required
           />
@@ -115,7 +114,7 @@ const Simulate = () => {
       <button
         onClick={handleEditBots}
         className="btn btn-secondary"
-        style={{ marginTop: "10px" }}
+        style={{ marginTop: '10px' }}
       >
         Manage Bots
       </button>

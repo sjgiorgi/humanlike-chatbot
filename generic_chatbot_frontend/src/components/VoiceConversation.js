@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
-import "../styles/VoiceConversation.css";
+import React, { useState, useEffect, useRef } from 'react';
+import '../styles/VoiceConversation.css';
 
 const VoiceConversation = () => {
-  const [isConnected, setIsConnected] = useState(false);
+  const [, setIsConnected] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
@@ -12,37 +12,38 @@ const VoiceConversation = () => {
 
   const apiUrl = process.env.REACT_APP_API_URL;
   const searchParams = new URLSearchParams(window.location.search);
-  const botName = searchParams.get("bot_name");
-  const conversationId = searchParams.get("conversation_id");
-  const participantId = searchParams.get("participant_id");
+  const botName = searchParams.get('bot_name');
+  const conversationId = searchParams.get('conversation_id');
+  const participantId = searchParams.get('participant_id');
 
-  const surveyId = searchParams.get("survey_id") || "";
-  const studyName = searchParams.get("study_name") || "";
-  const userGroup = searchParams.get("user_group") || "";
+  const surveyId = searchParams.get('survey_id') || '';
+  const studyName = searchParams.get('study_name') || '';
+  const userGroup = searchParams.get('user_group') || '';
   const surveyMetaData = window.location.href;
 
   const saveUtterance = async ({ text, isAssistant = false }) => {
     const formData = new FormData();
-    formData.append("transcript", text);
-    formData.append("conversation_id", conversationId);
-    formData.append("is_voice", "true");
+    formData.append('transcript', text);
+    formData.append('conversation_id', conversationId);
+    formData.append('is_voice', 'true');
 
     if (isAssistant) {
-      formData.append("bot_name", botName);
+      formData.append('bot_name', botName);
     } else {
-      formData.append("participant_id", participantId);
+      formData.append('participant_id', participantId);
     }
 
     try {
       const res = await fetch(`${apiUrl}/upload_voice_utterance/`, {
-        method: "POST",
+        method: 'POST',
         body: formData,
       });
-      console.log("🔍 Uploading to:", `${apiUrl}/upload_voice_utterance/`);
-      const data = await res.json();
-      console.log("✅ Saved utterance:", data);
+      // console.log('🔍 Uploading to:', `${apiUrl}/upload_voice_utterance/`);
+      // const data = await res.json();
+      // console.log('✅ Saved utterance:', data);
+      await res.json(); // Keep the response to avoid unused variable warning
     } catch (err) {
-      console.error("❌ Failed to save utterance:", err);
+      // console.error('❌ Failed to save utterance:', err);
     }
   };
 
@@ -52,8 +53,8 @@ const VoiceConversation = () => {
     const init = async () => {
       try {
         await fetch(`${apiUrl}/initialize_conversation/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             bot_name: botName,
             conversation_id: conversationId,
@@ -64,9 +65,9 @@ const VoiceConversation = () => {
             survey_meta_data: surveyMetaData,
           }),
         });
-        console.log("✅ Conversation initialized");
+        // console.log('✅ Conversation initialized');
       } catch (err) {
-        console.error("Failed to initialize conversation:", err);
+        // console.error('Failed to initialize conversation:', err);
       }
     };
 
@@ -81,59 +82,66 @@ const VoiceConversation = () => {
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
 
-      const audioEl = document.createElement("audio");
+      const audioEl = document.createElement('audio');
       audioEl.autoplay = true;
       document.body.appendChild(audioEl);
       audioRef.current = audioEl;
 
-      pc.ontrack = (e) => {
+      pc.ontrack = e => {
         audioEl.srcObject = e.streams[0];
       };
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-      const dc = pc.createDataChannel("oai-events");
+      const dc = pc.createDataChannel('oai-events');
       dcRef.current = dc;
 
-      let assistantBuffer = "";
+      // let assistantBuffer = '';
 
       dc.onopen = () => {
         const enableTranscription = {
-          type: "session.update",
+          type: 'session.update',
           session: {
             input_audio_transcription: {
-              model: "whisper-1",
+              model: 'whisper-1',
             },
           },
         };
         dc.send(JSON.stringify(enableTranscription));
-        console.log("📡 Sent session.update to enable user speech transcription");
+        // console.log(
+        //   '📡 Sent session.update to enable user speech transcription'
+        // );
       };
 
-      dc.onmessage = (event) => {
+      dc.onmessage = event => {
         const message = JSON.parse(event.data);
-        console.log("📨 Message:", message);
+        // console.log('📨 Message:', message);
 
-        if (message.type === "conversation.item.input_audio_transcription.completed") {
+        if (
+          message.type ===
+          'conversation.item.input_audio_transcription.completed'
+        ) {
           const transcript = message.transcript?.trim();
           if (transcript) {
-            console.log("🗣️ USER FINAL TRANSCRIPT:", transcript);
+            // console.log('🗣️ USER FINAL TRANSCRIPT:', transcript);
             saveUtterance({ text: transcript });
             setIsTyping(true);
           }
         }
 
-        if (message.type === "response.content_part") {
+        if (message.type === 'response.content_part') {
           const partial = message.part?.transcript;
-          if (partial) assistantBuffer += partial + " ";
+          if (partial) {
+            // assistantBuffer += partial + ' ';
+          }
         }
 
-        if (message.type === "response.content_part.done") {
+        if (message.type === 'response.content_part.done') {
           const finalText = message.part?.transcript?.trim();
-          console.log("🤖 Final Assistant Message:", finalText);
+          // console.log('🤖 Final Assistant Message:', finalText);
           saveUtterance({ text: finalText, isAssistant: true });
-          assistantBuffer = "";
+          // assistantBuffer = '';
           setIsTyping(false);
         }
       };
@@ -141,22 +149,25 @@ const VoiceConversation = () => {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const sdpResponse = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17", {
-        method: "POST",
-        body: offer.sdp,
-        headers: {
-          Authorization: `Bearer ${client_secret.value}`,
-          "Content-Type": "application/sdp",
-        },
-      });
+      const sdpResponse = await fetch(
+        'https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17',
+        {
+          method: 'POST',
+          body: offer.sdp,
+          headers: {
+            Authorization: `Bearer ${client_secret.value}`,
+            'Content-Type': 'application/sdp',
+          },
+        }
+      );
 
-      const answer = { type: "answer", sdp: await sdpResponse.text() };
+      const answer = { type: 'answer', sdp: await sdpResponse.text() };
       await pc.setRemoteDescription(answer);
 
       setIsConnected(true);
       setIsStreaming(true);
     } catch (err) {
-      console.error("❌ Failed to start voice session:", err);
+      // console.error('❌ Failed to start voice session:', err);
     }
   };
 
@@ -194,7 +205,10 @@ const VoiceConversation = () => {
               🎙️ Start Voice Chat
             </button>
           ) : (
-            <button className="send-button stop" onClick={stopVoiceConversation}>
+            <button
+              className="send-button stop"
+              onClick={stopVoiceConversation}
+            >
               ⏹️ Stop
             </button>
           )}

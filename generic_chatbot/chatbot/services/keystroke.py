@@ -40,7 +40,8 @@ def update_keystrokes(request):
                     timestamp = datetime.fromisoformat(timestamp)
                 except ValueError:
                     return JsonResponse(
-                        {"error": "Invalid timestamp format. Use ISO 8601."}, status=400,
+                        {"error": "Invalid timestamp format. Use ISO 8601."},
+                        status=400,
                     )
             else:
                 timestamp = datetime.now()

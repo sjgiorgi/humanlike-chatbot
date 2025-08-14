@@ -1,10 +1,10 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Simulate from "./components/Simulate";
-import Conversation from "./components/Conversation";
-import EditBots from "./components/EditBots";
-import VoiceConversation from "./components/VoiceConversation";
-import Avatar from "./components/Avatar"
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Simulate from './components/Simulate';
+import Conversation from './components/Conversation';
+import EditBots from './components/EditBots';
+import VoiceConversation from './components/VoiceConversation';
+import Avatar from './components/Avatar';
 
 function App() {
   return (

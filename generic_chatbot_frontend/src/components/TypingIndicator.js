@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 const TypingIndicator = ({ avatar }) => (
   <div className="message-row received">

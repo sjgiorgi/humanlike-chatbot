@@ -67,7 +67,6 @@
   text-align: left;
 }
 
-
 .text-conversation .message-avatar {
   width: 38px;
   border-radius: 50%;
@@ -108,9 +107,15 @@
 }
 
 @keyframes typing {
-  0% { opacity: 0.2; }
-  50% { opacity: 1; }
-  100% { opacity: 0.2; }
+  0% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
 }
 
 .text-conversation .typing-indicator {
@@ -140,23 +145,23 @@
 
 /* Mobile-specific adjustments */
 @media screen and (max-width: 1000px) {
-  .text-conversation .conversation-container{
-      width: 90vw;
+  .text-conversation .conversation-container {
+    width: 90vw;
   }
-  
+
   .text-conversation .chat-box {
-      width: 90vw;
-      height: 80vh;
-      border-radius: 0;
+    width: 90vw;
+    height: 80vh;
+    border-radius: 0;
   }
 
   .text-conversation .message-input {
-      font-size: 14px;
-      padding: 10px;
+    font-size: 14px;
+    padding: 10px;
   }
 
   .text-conversation .send-button {
-      font-size: 14px;
-      padding: 10px 14px;
+    font-size: 14px;
+    padding: 10px 14px;
   }
 }
