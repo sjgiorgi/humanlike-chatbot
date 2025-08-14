@@ -76,16 +76,11 @@ class BotAdminForm(forms.ModelForm):
         ai_model = cleaned_data.get("ai_model")
 
         if not ai_model:
-            # Try to get a default model
-            default_model = Bot.get_default_model()
-            if default_model:
-                cleaned_data["ai_model"] = default_model
-            else:
-                raise ValidationError(
-                    {
-                        "ai_model": "A model must be selected. Bots cannot function without a model.",
-                    },
-                )
+            raise ValidationError(
+                {
+                    "ai_model": "A model must be selected. Bots cannot function without a model.",
+                },
+            )
 
         return cleaned_data
 
