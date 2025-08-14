@@ -19,11 +19,11 @@ RUN apt-get update && apt-get install -y \
 # Install pipenv 
 RUN pip install pipenv
 
-# Copy Pipfile and Pipfile.lock (if available)
-COPY Pipfile Pipfile.lock /app/
+# Copy Pipfile
+COPY Pipfile /app/
 
 # Install dependencies using Pipenv
-RUN pipenv install --deploy --system
+RUN pipenv install --system --skip-lock
 
 # Copy the application code into the container
 COPY . /app
