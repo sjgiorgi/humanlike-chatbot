@@ -64,7 +64,9 @@ def get_or_create_engine_from_model(model, engine_instances):
     engine_key = (model.provider.name, model.model_id)
 
     if engine_key not in engine_instances:
-        logger.info(f"Initializing Engine: Type={model.provider.name}, Model={model.model_id}")
+        logger.info(
+            f"Initializing Engine: Type={model.provider.name}, Model={model.model_id}",
+        )
         engine_instances[engine_key] = initialize_engine_from_model(model)
 
     return engine_instances[engine_key]

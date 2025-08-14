@@ -29,7 +29,9 @@ def get_realtime_session(request):
 
     try:
         response = requests.post(
-            "https://api.openai.com/v1/realtime/sessions", headers=headers, json=data,
+            "https://api.openai.com/v1/realtime/sessions",
+            headers=headers,
+            json=data,
         )
         return JsonResponse(response.json(), status=response.status_code)
     except Exception as e:
@@ -64,7 +66,8 @@ def upload_voice_utterance(request):
 
         if not transcript and not audio_file:
             return JsonResponse(
-                {"error": "Must include either transcript or audio."}, status=400,
+                {"error": "Must include either transcript or audio."},
+                status=400,
             )
 
         conversation = Conversation.objects.get(conversation_id=conversation_id)

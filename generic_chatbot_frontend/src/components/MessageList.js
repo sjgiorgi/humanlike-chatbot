@@ -1,20 +1,25 @@
-import React, { useEffect, useRef } from "react";
-import MessageBubble from "./MessageBubble";
-import TypingIndicator from "./TypingIndicator";
+import React, { useEffect, useRef } from 'react';
+import MessageBubble from './MessageBubble';
+import TypingIndicator from './TypingIndicator';
 
 const MessageList = ({ messages, isTyping, avatar }) => {
   const endRef = useRef(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping, avatar]);
 
   return (
     <div className="messages-box">
       {messages.map((msg, idx) => (
-        <MessageBubble key={idx} sender={msg.sender} content={msg.content} avatar={avatar} />
+        <MessageBubble
+          key={idx}
+          sender={msg.sender}
+          content={msg.content}
+          avatar={avatar}
+        />
       ))}
-      {isTyping && <TypingIndicator avatar={avatar}/>}
+      {isTyping && <TypingIndicator avatar={avatar} />}
       <div ref={endRef} />
     </div>
   );

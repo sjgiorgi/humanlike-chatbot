@@ -27,10 +27,14 @@ pillow = "*"
 boto3 = "*"
 
 [requires]
-python_version = "3.11"
+python_version = "3.12"
 
 [dev-packages]
 ruff = "*"
 pytest = "*"
 pytest-django = "*"
 pytest-asyncio = "*"
+isort = "*"
+mypy = "*"
+black = "*"
+django-stubs = "*"

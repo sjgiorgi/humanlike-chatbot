@@ -10,11 +10,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load .env file
 ROOT_DIR = BASE_DIR.parent
-dotenv_path = os.path.join(ROOT_DIR, ".env")
+dotenv_path = ROOT_DIR / ".env"
 load_dotenv(dotenv_path)
 
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -91,7 +91,6 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
-# CORS_ALLOWED_ORIGINS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
@@ -193,12 +192,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Add STATICFILES_DIRS for development
 if DEBUG:
     STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, "static"),
+        BASE_DIR / "static",
     ]
 
 # WhiteNoise configuration for both development and production
@@ -208,7 +207,9 @@ STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 # WhiteNoise configuration
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = DEBUG  # Auto-refresh in development
-WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0  # 1 year in production, no cache in dev
+WHITENOISE_MAX_AGE = (
+    31536000 if not DEBUG else 0
+)  # 1 year in production, no cache in dev
 WHITENOISE_INDEX_FILE = True
 
 # Default primary key field type
@@ -217,7 +218,7 @@ WHITENOISE_INDEX_FILE = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_ROOT = BASE_DIR / "media"
 
 X_FRAME_OPTIONS = "ALLOWALL"
 # consider restricting in production
@@ -238,8 +239,8 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 BACKEND_ENVIRONMENT = os.getenv("BACKEND_ENVIRONMENT", "production")
 
 # Create logs directory if it doesn't exist
-LOGS_DIR = os.path.join(BASE_DIR, "logs")
-os.makedirs(LOGS_DIR, exist_ok=True)
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
     "version": 1,
@@ -266,7 +267,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": os.path.join(BASE_DIR, "logs", "django.log"),
+            "filename": BASE_DIR / "logs" / "django.log",
             "maxBytes": 1024 * 1024 * 10,  # 10MB
             "backupCount": 5,
             "formatter": "detailed",
@@ -274,7 +275,7 @@ LOGGING = {
         },
         "error_file": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": os.path.join(BASE_DIR, "logs", "error.log"),
+            "filename": BASE_DIR / "logs" / "error.log",
             "maxBytes": 1024 * 1024 * 10,  # 10MB
             "backupCount": 5,
             "formatter": "detailed",

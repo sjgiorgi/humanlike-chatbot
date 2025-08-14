@@ -5,7 +5,7 @@ from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from kani import ChatMessage, ChatRole, Kani
 
-from server.engine import get_or_create_engine, get_or_create_engine_from_model
+from server.engine import get_or_create_engine_from_model
 
 from ..models import Bot, Conversation, Utterance
 from .moderation import moderate_message
@@ -19,28 +19,32 @@ engine_instances = {}
 
 def generate_system_prompt(bot, selected_persona=None):
     """
-    Generate a dynamic system prompt by combining the bot's base prompt 
+    Generate a dynamic system prompt by combining the bot's base prompt
     with instructions from the selected persona for this conversation.
-    
+
     Args:
         bot: Bot instance with prompt
         selected_persona: Persona instance selected for this conversation (can be None)
-        
+
     Returns:
         str: Combined system prompt
     """
     try:
         # Start with the bot's base prompt
         system_prompt = bot.prompt.strip() if bot.prompt else ""
-        
+
         # Add selected persona instructions if available
-        if selected_persona and hasattr(selected_persona, "name") and hasattr(selected_persona, "instructions"):
+        if (
+            selected_persona
+            and hasattr(selected_persona, "name")
+            and hasattr(selected_persona, "instructions")
+        ):
             # Combine base prompt with persona instructions
             if system_prompt:
                 system_prompt += "\n\n"
-            
+
             system_prompt += f"Additional personality instructions:\nPersona '{selected_persona.name}': {selected_persona.instructions}"
-        
+
         return system_prompt
     except Exception as e:
         logger.error(f"Error generating system prompt: {e}")
@@ -49,7 +53,13 @@ def generate_system_prompt(bot, selected_persona=None):
 
 
 async def save_chat_to_db(
-    conversation_id, speaker_id, text, bot_name=None, participant_id=None, instruction_prompt=None, chat_history_used=None,
+    conversation_id,
+    speaker_id,
+    text,
+    bot_name=None,
+    participant_id=None,
+    instruction_prompt=None,
+    chat_history_used=None,
 ):
     """
     Save chat messages asynchronously to the Utterance table.
@@ -74,6 +84,7 @@ async def save_chat_to_db(
     except Exception as e:
         logger.error(f"Failed to save message to Utterance table: {e}")
         import traceback
+
         traceback.print_exc()
 
 
@@ -85,11 +96,15 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     """
     # Prevent followup requests from being processed as regular user messages
     if message.startswith("[FOLLOW-UP REQUEST]"):
-        logger.warning(f"Followup request detected in regular chat round, ignoring: {message[:50]}...")
+        logger.warning(
+            f"Followup request detected in regular chat round, ignoring: {message[:50]}...",
+        )
         return "I'm sorry, but I can't process followup requests through the regular chat. Please use the appropriate followup mechanism."
-    
+
     # Fetch bot object with personas and ai_model prefetched
-    bot = await sync_to_async(Bot.objects.prefetch_related("personas", "ai_model__provider").get)(name=bot_name)
+    bot = await sync_to_async(
+        Bot.objects.prefetch_related("personas", "ai_model__provider").get,
+    )(name=bot_name)
 
     # Moderate incoming message
     # Run in thread to avoid blocking
@@ -118,21 +133,29 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     # Retrieve history from cache
     cache_key = f"conversation_cache_{conversation_id}"
     conversation_history = cache.get(cache_key, [])
-    
+
     # If cache is empty, try to load from database
     if not conversation_history:
         try:
-            conversation = await sync_to_async(Conversation.objects.get)(conversation_id=conversation_id)
-            utterances = await sync_to_async(list)(Utterance.objects.filter(conversation=conversation).order_by("created_time"))
-            
+            conversation = await sync_to_async(Conversation.objects.get)(
+                conversation_id=conversation_id,
+            )
+            utterances = await sync_to_async(list)(
+                Utterance.objects.filter(conversation=conversation).order_by(
+                    "created_time",
+                ),
+            )
+
             # Build conversation history from database
             for utterance in utterances:
                 role = "user" if utterance.speaker_id == "user" else "assistant"
                 conversation_history.append({"role": role, "content": utterance.text})
-            
+
             # Populate cache
             cache.set(cache_key, conversation_history, timeout=3600)
-            logger.info(f"Loaded {len(conversation_history)} messages from database for conversation {conversation_id}")
+            logger.info(
+                f"Loaded {len(conversation_history)} messages from database for conversation {conversation_id}",
+            )
         except Exception as e:
             logger.warning(f"Failed to load conversation history from database: {e}")
             conversation_history = []
@@ -140,14 +163,18 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     # Apply transcript length limit to history only (before adding new message)
     if bot.max_transcript_length > 0:
         # Keep only the latest messages from history up to the limit
-        conversation_history = conversation_history[-bot.max_transcript_length:]
-        logger.info(f"Limited history to {len(conversation_history)} messages (max: {bot.max_transcript_length})")
+        conversation_history = conversation_history[-bot.max_transcript_length :]
+        logger.info(
+            f"Limited history to {len(conversation_history)} messages (max: {bot.max_transcript_length})",
+        )
     elif bot.max_transcript_length == 0:
         # 0 means no chat history - clear history
         conversation_history = []
-        logger.info(f"No chat history - using only current message")
+        logger.info("No chat history - using only current message")
     else:
-        logger.info(f"No transcript limit applied, using all {len(conversation_history)} messages from history")
+        logger.info(
+            f"No transcript limit applied, using all {len(conversation_history)} messages from history",
+        )
 
     # Append new message after applying transcript limit
     conversation_history.append({"role": "user", "content": message})
@@ -162,16 +189,20 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     ]
 
     # Get the selected persona for this conversation
-    conversation = await sync_to_async(Conversation.objects.select_related("selected_persona").get)(conversation_id=conversation_id)
+    conversation = await sync_to_async(
+        Conversation.objects.select_related("selected_persona").get,
+    )(conversation_id=conversation_id)
     selected_persona = conversation.selected_persona
-    
+
     # Generate dynamic system prompt combining bot prompt with selected persona
     system_prompt = generate_system_prompt(bot, selected_persona)
-    
+
     # Log the generated prompt for debugging
     logger.info(f"Bot '{bot.name}' system prompt:")
     logger.info(f"   Base prompt: {bot.prompt[:100] if bot.prompt else 'None'}...")
-    logger.info(f"   Selected persona: {selected_persona.name if selected_persona and hasattr(selected_persona, 'name') else 'None'}")
+    logger.info(
+        f"   Selected persona: {selected_persona.name if selected_persona and hasattr(selected_persona, 'name') else 'None'}",
+    )
     logger.info(f"   Final prompt length: {len(system_prompt)} characters")
 
     # Run Kani - ai_model is now required
@@ -190,11 +221,11 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     # Capture the chat history that was actually used (before appending bot response)
     # Store only the chat history sent to LLM (excluding the new user message)
     chat_history_json = json.dumps(conversation_history[:-1], indent=2)
-    
+
     # Append bot response
     conversation_history.append({"role": "assistant", "content": response_text})
     cache.set(cache_key, conversation_history, timeout=3600)
-    
+
     # Save to DB (but not followup requests)
     if not message.startswith("[FOLLOW-UP REQUEST]"):
         await save_chat_to_db(
