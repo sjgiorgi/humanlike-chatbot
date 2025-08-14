@@ -31,7 +31,7 @@ HUMANLIKE-CHATBOT/
     ├── server/
         ├── engine.py 
     ├── config.json # Custom Chatbot configuration 
-    ├── Dockerfile.local
+    ├── Dockerfile
     ├── manage.py
     ├── Pipfile
     ├── Pipfile.lock
