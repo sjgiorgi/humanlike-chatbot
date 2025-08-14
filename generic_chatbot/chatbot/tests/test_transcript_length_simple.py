@@ -13,20 +13,30 @@ class TestTranscriptLengthSimple(TestCase):
         # Clear cache before each test
         cache.clear()
         
+        # Clean up any existing test bots first to prevent conflicts
+        Bot.objects.filter(name__startswith='test_bot_').delete()
+        Conversation.objects.filter(conversation_id__startswith='test_').delete()
+        
+        # Get or create default models
+        from chatbot.models import Model
+        Model.get_or_create_default_models()
+        self.model = Model.objects.first()
+        
+        if not self.model:
+            self.skipTest("No models found in database.")
+        
         # Create test bot with different transcript length settings
         self.bot_no_limit = Bot.objects.create(
             name="test_bot_no_limit",
             prompt="You are a helpful assistant.",
-            model_type="OpenAI",
-            model_id="gpt-4",
+            ai_model=self.model,
             max_transcript_length=0  # No limit
         )
         
         self.bot_limit_5 = Bot.objects.create(
             name="test_bot_limit_5",
             prompt="You are a helpful assistant.",
-            model_type="OpenAI",
-            model_id="gpt-4",
+            ai_model=self.model,
             max_transcript_length=5  # Limit to 5 messages
         )
         
@@ -39,7 +49,27 @@ class TestTranscriptLengthSimple(TestCase):
 
     def tearDown(self):
         """Clean up after each test"""
+        # Clear cache
         cache.clear()
+        
+        # Clean up database objects to prevent conflicts between tests
+        try:
+            # Delete bots created in setUp
+            if hasattr(self, 'bot_no_limit'):
+                self.bot_no_limit.delete()
+            if hasattr(self, 'bot_limit_5'):
+                self.bot_limit_5.delete()
+            
+            # Delete conversation
+            if hasattr(self, 'conversation'):
+                self.conversation.delete()
+                
+            # Delete any other bots created during tests
+            Bot.objects.filter(name__startswith='test_bot_').delete()
+            
+        except Exception as e:
+            # Ignore errors during cleanup to avoid masking test failures
+            pass
 
     def create_test_utterances(self, count):
         """Helper method to create test utterances"""
@@ -66,8 +96,7 @@ class TestTranscriptLengthSimple(TestCase):
         bot = Bot.objects.create(
             name="test_bot_default",
             prompt="Test prompt",
-            model_type="OpenAI",
-            model_id="gpt-4"
+            ai_model=self.model
         )
         assert bot.max_transcript_length == 0  # Default should be 0 (no chat history)
         
@@ -75,8 +104,7 @@ class TestTranscriptLengthSimple(TestCase):
         bot_with_limit = Bot.objects.create(
             name="test_bot_with_limit",
             prompt="Test prompt",
-            model_type="OpenAI",
-            model_id="gpt-4",
+            ai_model=self.model,
             max_transcript_length=20
         )
         assert bot_with_limit.max_transcript_length == 20
@@ -142,8 +170,7 @@ class TestTranscriptLengthSimple(TestCase):
         bot_unlimited = Bot.objects.create(
             name="test_bot_unlimited",
             prompt="Test prompt",
-            model_type="OpenAI",
-            model_id="gpt-4",
+            ai_model=self.model,
             max_transcript_length=-1  # Unlimited
         )
         
@@ -242,8 +269,7 @@ class TestTranscriptLengthSimple(TestCase):
         bot_limit_2 = Bot.objects.create(
             name="test_bot_limit_2",
             prompt="Test prompt",
-            model_type="OpenAI",
-            model_id="gpt-4",
+            ai_model=self.model,
             max_transcript_length=2  # Limit to 2 messages
         )
         
