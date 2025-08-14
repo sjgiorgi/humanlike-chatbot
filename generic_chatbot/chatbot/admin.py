@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from PIL import Image
 
-from .models import Avatar, Bot, Conversation, Keystroke, Persona, Utterance
+from .models import Avatar, Bot, Conversation, Keystroke, Model, ModelProvider, Persona, Utterance
 from .services.avatar import generate_avatar
 from .services.s3_helper import delete, get_presigned_url, upload
 
@@ -62,6 +62,22 @@ class BotAdminForm(forms.ModelForm):
     class Meta:
         model = Bot
         fields = "__all__"
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        ai_model = cleaned_data.get('ai_model')
+        
+        if not ai_model:
+            # Try to get a default model
+            default_model = Bot.get_default_model()
+            if default_model:
+                cleaned_data['ai_model'] = default_model
+            else:
+                raise ValidationError({
+                    'ai_model': 'A model must be selected. Bots cannot function without a model.'
+                })
+        
+        return cleaned_data
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -296,14 +312,17 @@ class UtteranceAdmin(BaseAdmin):
     )
 
 
+
+
+
 @admin.register(Bot)
 class BotAdmin(BaseAdmin):
     form = BotAdminForm
     
     list_display = (
         "name",
-        "model_type",
-        "model_id",
+        "model_provider",
+        "model_name",
         "avatar_type",
         "has_initial_utterance",
         "chunk_messages",
@@ -315,10 +334,18 @@ class BotAdmin(BaseAdmin):
         "avatar_preview",
     )
     list_display_links = ("name",)
-    search_fields = ("name", "model_type", "model_id")
-    list_filter = ("model_type", "avatar_type", "chunk_messages", "humanlike_delay", "follow_up_on_idle", "recurring_followup", "personas")
+    search_fields = ("name", "ai_model__provider__name", "ai_model__display_name")
+    list_filter = ("ai_model__provider", "avatar_type", "chunk_messages", "humanlike_delay", "follow_up_on_idle", "recurring_followup", "personas")
     ordering = ("name",)
     filter_horizontal = ["personas"]
+    
+    def model_provider(self, obj):
+        return obj.ai_model.provider.display_name
+    model_provider.short_description = "Provider"
+    
+    def model_name(self, obj):
+        return obj.ai_model.display_name
+    model_name.short_description = "Model"
     
     def get_persona_count(self, obj):
         return obj.personas.count()
@@ -364,7 +391,7 @@ class BotAdmin(BaseAdmin):
 
     fieldsets = (
         ("Basic Information", {
-            "fields": ("name", "model_type", "model_id"),
+            "fields": ("name", "ai_model"),
         }),
         ("Configuration", {
             "fields": ("prompt", "initial_utterance", "avatar_type"),
