@@ -11,9 +11,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='bot',
-            name='ai_model',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bots', to='chatbot.model'),
-        ),
+        # This migration is reverted - we'll handle making ai_model non-nullable in 0023
+        # after populating the data in 0022
     ]
