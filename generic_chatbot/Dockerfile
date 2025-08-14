@@ -3,7 +3,7 @@ ARG PYTHON_VERSION=3.12
 ARG ENVIRONMENT=production
 
 # Base stage for common dependencies
-FROM python:${PYTHON_VERSION}${ENVIRONMENT:+-slim} as base
+FROM python:3.12-slim as base
 
 # Set the working directory
 WORKDIR /app
