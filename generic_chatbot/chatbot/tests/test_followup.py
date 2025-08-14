@@ -6,31 +6,35 @@ import requests
 import json
 import time
 from datetime import datetime
+import pytest
 
 # Configuration
 API_BASE = "http://localhost:8000"
-BOT_NAME = "Helpful Assistant"
+BOT_NAME = f"test_bot_followup_{int(time.time())}"
 CONVERSATION_ID = f"test_followup_{int(time.time())}"
 PARTICIPANT_ID = "test_participant"
 
+@pytest.mark.django_db
 def test_followup_functionality():
     print("🧪 Testing Follow-up Functionality")
     print("=" * 50)
     
-    # Temporarily set bot idle time to 1 second for testing
-    print("0. Setting bot idle time to 1 second for testing...")
-    import os
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'generic_chatbot.settings')
-    import django
-    django.setup()
+    # Create test bot
+    print("0. Creating test bot...")
+    from chatbot.models import Bot, Model
+    Model.get_or_create_default_models()
+    model = Model.objects.first()
     
-    from chatbot.models import Bot
-    bot = Bot.objects.get(name=BOT_NAME)
-    original_idle_time = bot.idle_time_minutes
-    bot.idle_time_minutes = 1
-    bot.save()
-    print(f"   Original idle time: {original_idle_time} minutes")
-    print(f"   Test idle time: {bot.idle_time_minutes} minutes")
+    bot = Bot.objects.create(
+        name=BOT_NAME,
+        prompt="You are a helpful assistant.",
+        ai_model=model,
+        follow_up_on_idle=True,
+        idle_time_minutes=1
+    )
+    print(f"   Test bot created: {BOT_NAME}")
+    print(f"   Idle time: {bot.idle_time_minutes} minutes")
+    print(f"   Follow-up enabled: {bot.follow_up_on_idle}")
     
     # Step 1: Initialize conversation
     print("1. Initializing conversation...")

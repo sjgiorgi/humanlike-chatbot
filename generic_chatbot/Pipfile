@@ -31,3 +31,6 @@ python_version = "3.11"
 
 [dev-packages]
 ruff = "*"
+pytest = "*"
+pytest-django = "*"
+pytest-asyncio = "*"

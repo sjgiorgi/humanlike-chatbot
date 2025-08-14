@@ -6,29 +6,34 @@ import os
 import django
 import time
 from datetime import datetime
-
-# Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'generic_chatbot.settings')
-django.setup()
+import pytest
 
 from chatbot.models import Bot, Conversation, Utterance
 from chatbot.services.followup import generate_followup_message
 import asyncio
 
+@pytest.mark.django_db
 def test_followup_not_saved_to_db():
     print("🧪 Testing Followup Request Not Saved to Database")
     print("=" * 60)
     
     # Test configuration
-    BOT_NAME = "Helpful Assistant"
+    BOT_NAME = f"test_bot_db_{int(time.time())}"
     CONVERSATION_ID = f"test_followup_db_{int(time.time())}"
     PARTICIPANT_ID = "test_participant_db"
     
-    # Get bot and temporarily set idle time to 1 second
-    bot = Bot.objects.get(name=BOT_NAME)
-    original_idle_time = bot.idle_time_minutes
-    bot.idle_time_minutes = 1
-    bot.save()
+    # Create test bot
+    from chatbot.models import Model
+    Model.get_or_create_default_models()
+    model = Model.objects.first()
+    
+    bot = Bot.objects.create(
+        name=BOT_NAME,
+        prompt="You are a helpful assistant.",
+        ai_model=model,
+        follow_up_on_idle=True,
+        idle_time_minutes=1
+    )
     
     print(f"✅ Bot configured: {BOT_NAME}")
     print(f"   Idle time: {bot.idle_time_minutes} minutes")

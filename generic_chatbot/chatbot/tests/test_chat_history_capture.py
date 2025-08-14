@@ -14,12 +14,19 @@ class TestChatHistoryCapture(TestCase):
         # Clear cache before each test
         cache.clear()
         
+        # Get or create default models
+        from chatbot.models import Model
+        Model.get_or_create_default_models()
+        self.model = Model.objects.first()
+        
+        if not self.model:
+            self.skipTest("No models found in database.")
+        
         # Create test bot
         self.bot = Bot.objects.create(
             name="test_bot",
             prompt="You are a helpful assistant.",
-            model_type="OpenAI",
-            model_id="gpt-4",
+            ai_model=self.model,
             max_transcript_length=5  # Limit to 5 messages
         )
         
@@ -145,8 +152,7 @@ class TestChatHistoryCapture(TestCase):
         bot_zero = Bot.objects.create(
             name="test_bot_zero",
             prompt="You are a helpful assistant.",
-            model_type="OpenAI",
-            model_id="gpt-4",
+            ai_model=self.model,
             max_transcript_length=0  # No chat history
         )
         
