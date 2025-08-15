@@ -546,7 +546,7 @@ class BotAdmin(BaseAdmin):
         (
             "Configuration",
             {
-                "fields": ("prompt", "initial_utterance", "avatar_type"),
+                "fields": ("prompt", "initial_utterance"),
             },
         ),
         (
@@ -559,8 +559,13 @@ class BotAdmin(BaseAdmin):
         (
             "Avatar Settings",
             {
-                "fields": ("avatar_image", "remove_avatar"),
-                "description": "Upload and manage bot avatar image",
+                "fields": (
+                    "avatar_type",
+                    "avatar_prompt",
+                    "avatar_image",
+                    "remove_avatar",
+                ),
+                "description": "Configure avatar type, prompt, and upload avatar image",
             },
         ),
         (
@@ -631,7 +636,7 @@ class BotAdmin(BaseAdmin):
                         # Process through generate_avatar directly
                         image = generate_avatar(
                             raw_image,
-                            obj.name,
+                            obj,
                             obj.avatar_type,
                         )
                         image_key = (
@@ -750,7 +755,7 @@ class BotAdmin(BaseAdmin):
                         if processed_image:
                             image = generate_avatar(
                                 processed_image,
-                                obj.name,
+                                obj,
                                 obj.avatar_type,
                             )
                             image_key = (
