@@ -271,13 +271,18 @@ class Bot(models.Model):
         null=True,
         blank=True,
     )
-    model_id = models.CharField(max_length=255, default="gpt-4o-mini", null=True, blank=True)
+    model_id = models.CharField(
+        max_length=255,
+        default="gpt-4o-mini",
+        null=True,
+        blank=True,
+    )
     ai_model = models.ForeignKey(
-        Model, 
-        on_delete=models.CASCADE, 
+        Model,
+        on_delete=models.CASCADE,
         related_name="bots",
         null=False,
-        blank=False
+        blank=False,
     )
     initial_utterance = models.TextField(blank=True, null=True)
 
@@ -291,6 +296,13 @@ class Bot(models.Model):
         max_length=20,
         choices=AVATAR_CHOICES,
         default="none",
+    )
+
+    # Avatar generation prompt
+    avatar_prompt = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Prompt used for generating bot avatars. If empty, will use default prompt.",
     )
 
     # Message chunking control (bot-specific)

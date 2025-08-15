@@ -36,7 +36,7 @@ def make_square(image, fill_color=(255, 255, 255, 0)):
 
 def generate_avatar(
     file,
-    bot_name,
+    bot,
     avatar_type,
     conversation_id=None,
     participant_id=None,
@@ -65,16 +65,23 @@ def generate_avatar(
 
         client = openai.OpenAI()
 
-        chatbot_avatar_prompt = os.getenv("CHATBOT_AVATAR_PROMPT")
+        # Get avatar prompt from bot or fallback to environment variable
+        chatbot_avatar_prompt = (
+            bot.avatar_prompt
+            if hasattr(bot, "avatar_prompt") and bot.avatar_prompt
+            else os.getenv("CHATBOT_AVATAR_PROMPT")
+        )
         if not chatbot_avatar_prompt:
-            logger.error("[ERROR] CHATBOT_AVATAR_PROMPT not set")
+            logger.error(
+                "[ERROR] No avatar prompt available - neither bot.avatar_prompt nor CHATBOT_AVATAR_PROMPT environment variable is set",
+            )
             return None, None
 
         try:
             response = client.images.edit(
                 model="gpt-image-1",
                 image=[image_file],  # Pass as list as in original
-                prompt=os.getenv("CHATBOT_AVATAR_PROMPT"),
+                prompt=chatbot_avatar_prompt,
             )
 
             # Check if response has data
@@ -111,7 +118,7 @@ def generate_avatar(
             return None, None
 
         # Set the image name with timestamp to make it unique
-        image.name = f"{participant_id + '_' if participant_id else ''}{conversation_id + '_' if conversation_id else ''}{bot_name}_{avatar_type}_{int(datetime.now().timestamp())!s}_avatar.png"
+        image.name = f"{participant_id + '_' if participant_id else ''}{conversation_id + '_' if conversation_id else ''}{bot.name}_{avatar_type}_{int(datetime.now().timestamp())!s}_avatar.png"
 
         return image
     except Exception as e:
@@ -161,7 +168,7 @@ class AvatarAPIView(View):
                 try:
                     image = generate_avatar(
                         image_file,
-                        bot_name,
+                        bot,
                         bot.avatar_type,
                     )
                     if not image:
@@ -239,7 +246,7 @@ class AvatarAPIView(View):
             if bot.avatar_type == "default":
                 image = generate_avatar(
                     download("uploads", image_url),
-                    bot_name,
+                    bot,
                     bot.avatar_type,
                 )
                 image_key = (
@@ -257,7 +264,7 @@ class AvatarAPIView(View):
             if bot.avatar_type == "user" and conversation_id:
                 image = generate_avatar(
                     download("uploads", image_url),
-                    bot_name,
+                    bot,
                     bot.avatar_type,
                     conversation_id,
                     participant_id,
@@ -423,7 +430,7 @@ class AvatarDetailAPIView(View):
                 # Generate new avatar
                 edit_image = generate_avatar(
                     image_file,
-                    bot.name,
+                    bot,
                     bot.avatar_type,
                 )
 
@@ -506,7 +513,7 @@ class AvatarDetailAPIView(View):
                 image_url = data.get("image_path")
                 edit_image = generate_avatar(
                     download("uploads", image_url),
-                    bot.name,
+                    bot,
                     bot.avatar_type,
                 )
                 image_key = (
