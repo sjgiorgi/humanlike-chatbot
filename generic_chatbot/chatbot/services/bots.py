@@ -144,16 +144,34 @@ class BotDetailAPIView(View):
             bot.avatar_type = data.get("avatar_type", bot.avatar_type)
             bot.chunk_messages = data.get("chunk_messages", bot.chunk_messages)
             bot.humanlike_delay = data.get("humanlike_delay", bot.humanlike_delay)
-            bot.typing_speed_min_ms = data.get("typing_speed_min_ms", bot.typing_speed_min_ms)
-            bot.typing_speed_max_ms = data.get("typing_speed_max_ms", bot.typing_speed_max_ms)
-            bot.question_thinking_ms = data.get("question_thinking_ms", bot.question_thinking_ms)
-            bot.first_chunk_thinking_ms = data.get("first_chunk_thinking_ms", bot.first_chunk_thinking_ms)
-            bot.last_chunk_pause_ms = data.get("last_chunk_pause_ms", bot.last_chunk_pause_ms)
+            bot.typing_speed_min_ms = data.get(
+                "typing_speed_min_ms",
+                bot.typing_speed_min_ms,
+            )
+            bot.typing_speed_max_ms = data.get(
+                "typing_speed_max_ms",
+                bot.typing_speed_max_ms,
+            )
+            bot.question_thinking_ms = data.get(
+                "question_thinking_ms",
+                bot.question_thinking_ms,
+            )
+            bot.first_chunk_thinking_ms = data.get(
+                "first_chunk_thinking_ms",
+                bot.first_chunk_thinking_ms,
+            )
+            bot.last_chunk_pause_ms = data.get(
+                "last_chunk_pause_ms",
+                bot.last_chunk_pause_ms,
+            )
             bot.min_delay_ms = data.get("min_delay_ms", bot.min_delay_ms)
             bot.max_delay_ms = data.get("max_delay_ms", bot.max_delay_ms)
             bot.follow_up_on_idle = data.get("follow_up_on_idle", bot.follow_up_on_idle)
             bot.idle_time_minutes = data.get("idle_time_minutes", bot.idle_time_minutes)
-            bot.follow_up_instruction_prompt = data.get("follow_up_instruction_prompt", bot.follow_up_instruction_prompt)
+            bot.follow_up_instruction_prompt = data.get(
+                "follow_up_instruction_prompt",
+                bot.follow_up_instruction_prompt,
+            )
             bot.save()
 
             return JsonResponse({"message": "Bot updated successfully."}, status=200)

@@ -34,7 +34,13 @@ def make_square(image, fill_color=(255, 255, 255, 0)):
     return new_image.resize((512, 512))
 
 
-def generate_avatar(file, bot_name, avatar_type, conversation_id=None, participant_id=None):
+def generate_avatar(
+    file,
+    bot,
+    avatar_type,
+    conversation_id=None,
+    participant_id=None,
+):
     try:
         # Handle both PIL Image objects and Django UploadedFile objects
         if hasattr(file, "read"):
@@ -56,28 +62,35 @@ def generate_avatar(file, bot_name, avatar_type, conversation_id=None, participa
         if not openai.api_key:
             logger.error("[ERROR] OPENAI_API_KEY not set")
             return None, None
-            
+
         client = openai.OpenAI()
-        
-        chatbot_avatar_prompt = os.getenv("CHATBOT_AVATAR_PROMPT")
+
+        # Get avatar prompt from bot or fallback to environment variable
+        chatbot_avatar_prompt = (
+            bot.avatar_prompt
+            if hasattr(bot, "avatar_prompt") and bot.avatar_prompt
+            else os.getenv("CHATBOT_AVATAR_PROMPT")
+        )
         if not chatbot_avatar_prompt:
-            logger.error("[ERROR] CHATBOT_AVATAR_PROMPT not set")
+            logger.error(
+                "[ERROR] No avatar prompt available - neither bot.avatar_prompt nor CHATBOT_AVATAR_PROMPT environment variable is set",
+            )
             return None, None
-            
+
         try:
             response = client.images.edit(
                 model="gpt-image-1",
                 image=[image_file],  # Pass as list as in original
-                prompt=os.getenv("CHATBOT_AVATAR_PROMPT"),
+                prompt=chatbot_avatar_prompt,
             )
-            
+
             # Check if response has data
             if not response.data or len(response.data) == 0:
                 logger.error("[ERROR] OpenAI API returned no data")
                 return None, None
-                
+
             image_data = response.data[0]
-            
+
             # Handle both b64_json and url responses
             if hasattr(image_data, "b64_json") and image_data.b64_json:
                 # Legacy format - base64 encoded image
@@ -96,14 +109,16 @@ def generate_avatar(file, bot_name, avatar_type, conversation_id=None, participa
                     logger.error(f"[ERROR] Failed to download image from URL: {e}")
                     return None, None
             else:
-                logger.error("[ERROR] OpenAI API response missing both b64_json and url fields")
+                logger.error(
+                    "[ERROR] OpenAI API response missing both b64_json and url fields",
+                )
                 return None, None
         except Exception as e:
             logger.exception(f"[ERROR] OpenAI API call failed: {e}")
             return None, None
-            
+
         # Set the image name with timestamp to make it unique
-        image.name = f"{participant_id+'_' if participant_id else ''}{conversation_id+'_' if conversation_id else ''}{bot_name}_{avatar_type}_{int(datetime.now().timestamp())!s}_avatar.png"
+        image.name = f"{participant_id + '_' if participant_id else ''}{conversation_id + '_' if conversation_id else ''}{bot.name}_{avatar_type}_{int(datetime.now().timestamp())!s}_avatar.png"
 
         return image
     except Exception as e:
@@ -121,10 +136,16 @@ class AvatarAPIView(View):
             return JsonResponse({"error": str(e)}, status=500)
 
     def post(self, request, *args, **kwargs):
-        logger.info(f"[DEBUG] Avatar upload request received. Method: {request.method}, Content-Type: {request.content_type}")
-        logger.info(f"[DEBUG] Request FILES: {list(request.FILES.keys()) if request.FILES else 'No files'}")
-        logger.info(f"[DEBUG] Request POST: {list(request.POST.keys()) if request.POST else 'No POST data'}")
-        
+        logger.info(
+            f"[DEBUG] Avatar upload request received. Method: {request.method}, Content-Type: {request.content_type}",
+        )
+        logger.info(
+            f"[DEBUG] Request FILES: {list(request.FILES.keys()) if request.FILES else 'No files'}",
+        )
+        logger.info(
+            f"[DEBUG] Request POST: {list(request.POST.keys()) if request.POST else 'No POST data'}",
+        )
+
         try:
             # Check if this is a simple file upload (from EditBots)
             if request.FILES.get("image"):
@@ -132,33 +153,44 @@ class AvatarAPIView(View):
                 bot_name = request.POST.get("bot_name")
                 if not bot_name:
                     return JsonResponse({"error": "bot_name is required"}, status=400)
-                
+
                 try:
                     bot = Bot.objects.get(name=bot_name)
                 except Bot.DoesNotExist:
-                    return JsonResponse({"error": f"Bot with name '{bot_name}' not found"}, status=404)
-                
+                    return JsonResponse(
+                        {"error": f"Bot with name '{bot_name}' not found"},
+                        status=404,
+                    )
+
                 image_file = request.FILES.get("image")
-                
+
                 # Generate avatar using the uploaded file
                 try:
                     image = generate_avatar(
                         image_file,
-                        bot_name,
+                        bot,
                         bot.avatar_type,
                     )
                     if not image:
-                        return JsonResponse({"error": "Failed to generate avatar"}, status=500)
+                        return JsonResponse(
+                            {"error": "Failed to generate avatar"},
+                            status=500,
+                        )
                 except Exception as e:
                     logger.exception(f"[ERROR] Avatar generation failed: {e}")
-                    return JsonResponse({"error": f"Avatar generation failed: {e!s}"}, status=500)
-                
+                    return JsonResponse(
+                        {"error": f"Avatar generation failed: {e!s}"},
+                        status=500,
+                    )
+
                 # Create avatar record - handle both model structures
-                logger.info(f"[DEBUG] Backend environment: {settings.BACKEND_ENVIRONMENT}")
-                
+                logger.info(
+                    f"[DEBUG] Backend environment: {settings.BACKEND_ENVIRONMENT}",
+                )
+
                 if hasattr(Avatar, "image"):
                     # Main branch structure (ImageField)
-                    avatar = Avatar.objects.create(
+                    Avatar.objects.create(
                         bot=bot,
                         bot_conversation=None,
                         image=image,
@@ -167,11 +199,17 @@ class AvatarAPIView(View):
                     # Staging branch structure (S3 keys)
                     # For local development, save the file path
                     if settings.BACKEND_ENVIRONMENT == "local":
-                        logger.info("[DEBUG] Using local environment - saving file path")
-                        chatbot_avatar_key = image.name if hasattr(image, "name") else str(image)
+                        logger.info(
+                            "[DEBUG] Using local environment - saving file path",
+                        )
+                        chatbot_avatar_key = (
+                            image.name if hasattr(image, "name") else str(image)
+                        )
                     else:
                         # For production, upload to S3
-                        logger.info("[DEBUG] Using production environment - uploading to S3")
+                        logger.info(
+                            "[DEBUG] Using production environment - uploading to S3",
+                        )
                         try:
                             s3_key = f"avatar/{bot_name}_{int(time.time())}.png"
                             # Reset the ContentFile to the beginning before uploading
@@ -181,19 +219,21 @@ class AvatarAPIView(View):
                         except Exception as e:
                             logger.exception(f"[ERROR] S3 upload failed: {e}")
                             # Fallback to local path if S3 fails
-                            chatbot_avatar_key = image.name if hasattr(image, "name") else str(image)
-                    
-                    avatar = Avatar.objects.create(
+                            chatbot_avatar_key = (
+                                image.name if hasattr(image, "name") else str(image)
+                            )
+
+                    Avatar.objects.create(
                         bot=bot,
                         bot_conversation=None,
                         chatbot_avatar=chatbot_avatar_key,
                     )
-                
+
                 return JsonResponse(
                     {"message": "SUCCESS!"},
                     status=201,
                 )
-            
+
             # Original S3-based implementation
             data = json.loads(request.body)
             bot_name = data.get("bot_name")
@@ -205,12 +245,15 @@ class AvatarAPIView(View):
 
             if bot.avatar_type == "default":
                 image = generate_avatar(
-                    # request.FILES.get("image"),
                     download("uploads", image_url),
-                    bot_name,
+                    bot,
                     bot.avatar_type,
                 )
-                image_key = image.name if hasattr(image, "name") else f"{bot_name}_{int(time.time())}.png"
+                image_key = (
+                    image.name
+                    if hasattr(image, "name")
+                    else f"{bot_name}_{int(time.time())}.png"
+                )
                 upload(image, image_key)
                 delete("uploads", image_url)
                 Avatar.objects.create(
@@ -221,15 +264,17 @@ class AvatarAPIView(View):
             if bot.avatar_type == "user" and conversation_id:
                 image = generate_avatar(
                     download("uploads", image_url),
-                    bot_name,
+                    bot,
                     bot.avatar_type,
                     conversation_id,
-                    participant_id
+                    participant_id,
                 )
-                image_key = image.name if hasattr(image, "name") else f"{bot_name}_{int(time.time())}.png"
+                image_key = (
+                    image.name
+                    if hasattr(image, "name")
+                    else f"{bot_name}_{int(time.time())}.png"
+                )
                 upload(image, image_key)
-                # Not deleting images - will be done manually
-                # delete("uploads", image_url)
                 Avatar.objects.create(
                     bot=bot,
                     bot_conversation=conversation_id,
@@ -276,25 +321,38 @@ class AvatarDetailAPIView(View):
                     avatar.condition = "dissimilar"
                     if not avatar.chatbot_avatar:
                         avatar.chatbot_avatar = get_random_image(
-                            "avatar", avatar.participant_avatar,
+                            "avatar",
+                            avatar.participant_avatar,
                         )
                 else:
                     avatar.chatbot_avatar = avatar.participant_avatar
                 avatar.save()
-                
+
                 if avatar.chatbot_avatar:
                     # Check if we're in local development
                     if os.getenv("BACKEND_ENVIRONMENT") == "local":
                         # For local development, serve from media directory
+                        from pathlib import Path
+
                         from django.conf import settings
-                        local_path = os.path.join(settings.MEDIA_ROOT, "avatars", avatar.chatbot_avatar)
-                        if os.path.exists(local_path):
-                            data["image_url"] = f"/media/avatars/{avatar.chatbot_avatar}"
+
+                        local_path = (
+                            Path(settings.MEDIA_ROOT)
+                            / "avatars"
+                            / avatar.chatbot_avatar
+                        )
+                        if local_path.exists():
+                            data["image_url"] = (
+                                f"/media/avatars/{avatar.chatbot_avatar}"
+                            )
                         else:
                             data["image_url"] = None
                     else:
                         # Production: Get presigned URL
-                        data["image_url"] = get_presigned_url("avatar", avatar.chatbot_avatar)
+                        data["image_url"] = get_presigned_url(
+                            "avatar",
+                            avatar.chatbot_avatar,
+                        )
                 else:
                     data["image_url"] = None
             elif bot.avatar_type == "default":
@@ -304,15 +362,27 @@ class AvatarDetailAPIView(View):
                         # Check if we're in local development
                         if os.getenv("BACKEND_ENVIRONMENT") == "local":
                             # For local development, serve from media directory
+                            from pathlib import Path
+
                             from django.conf import settings
-                            local_path = os.path.join(settings.MEDIA_ROOT, "avatars", avatar.chatbot_avatar)
-                            if os.path.exists(local_path):
-                                data["image_url"] = f"/media/avatars/{avatar.chatbot_avatar}"
+
+                            local_path = (
+                                Path(settings.MEDIA_ROOT)
+                                / "avatars"
+                                / avatar.chatbot_avatar
+                            )
+                            if local_path.exists():
+                                data["image_url"] = (
+                                    f"/media/avatars/{avatar.chatbot_avatar}"
+                                )
                             else:
                                 data["image_url"] = None
                         else:
                             # Production: Get presigned URL
-                            data["image_url"] = get_presigned_url("avatar", avatar.chatbot_avatar)
+                            data["image_url"] = get_presigned_url(
+                                "avatar",
+                                avatar.chatbot_avatar,
+                            )
                     else:
                         data["image_url"] = None
                 except Avatar.DoesNotExist:
@@ -343,27 +413,32 @@ class AvatarDetailAPIView(View):
             if request.FILES.get("image"):
                 # Simple file upload from EditBots
                 image_file = request.FILES.get("image")
-                
+
                 # Delete old avatar if exists (handle both image field and chatbot_avatar field)
                 if hasattr(avatar, "image") and avatar.image:
                     avatar.image.delete(save=False)
                 elif avatar.chatbot_avatar:
                     # Delete from S3 if it exists
-                    try:
-                        delete("avatar", avatar.chatbot_avatar)
-                    except:
-                        pass  # Ignore S3 errors in local development
-                
+                    from contextlib import suppress
+
+                    with suppress(Exception):
+                        delete(
+                            "avatar",
+                            avatar.chatbot_avatar,
+                        )  # Ignore S3 errors in local development
+
                 # Generate new avatar
                 edit_image = generate_avatar(
                     image_file,
-                    bot.name,
+                    bot,
                     bot.avatar_type,
                 )
-                
+
                 # Update avatar - handle both model structures
-                logger.info(f"[DEBUG] Backend environment: {settings.BACKEND_ENVIRONMENT}")
-                
+                logger.info(
+                    f"[DEBUG] Backend environment: {settings.BACKEND_ENVIRONMENT}",
+                )
+
                 if hasattr(avatar, "image"):
                     # Main branch structure (ImageField)
                     avatar.image = edit_image
@@ -371,24 +446,31 @@ class AvatarDetailAPIView(View):
                 # For local development, save the file locally
                 elif settings.BACKEND_ENVIRONMENT == "local":
                     logger.info("[DEBUG] Using local environment - saving file locally")
-                    import os
-                    
+
                     # Create media directory if it doesn't exist
-                    media_dir = os.path.join(settings.MEDIA_ROOT, "avatars")
-                    os.makedirs(media_dir, exist_ok=True)
-                    
+                    from pathlib import Path
+
+                    media_dir = Path(settings.MEDIA_ROOT) / "avatars"
+                    media_dir.mkdir(parents=True, exist_ok=True)
+
                     # Get the filename from the image
-                    image_key = edit_image.name if hasattr(edit_image, "name") else f"{bot.name}_{int(time.time())}.png"
-                    
+                    image_key = (
+                        edit_image.name
+                        if hasattr(edit_image, "name")
+                        else f"{bot.name}_{int(time.time())}.png"
+                    )
+
                     # Save the processed image locally
-                    local_path = os.path.join(media_dir, image_key)
+                    local_path = media_dir / image_key
                     with open(local_path, "wb") as f:
                         f.write(edit_image.read())
-                    
+
                     avatar.chatbot_avatar = image_key
                 else:
                     # For production, upload to S3
-                    logger.info("[DEBUG] Using production environment - uploading to S3")
+                    logger.info(
+                        "[DEBUG] Using production environment - uploading to S3",
+                    )
                     try:
                         s3_key = f"avatar/{bot.name}_{int(time.time())}.png"
                         logger.info(f"[DEBUG] Attempting S3 upload with key: {s3_key}")
@@ -398,20 +480,28 @@ class AvatarDetailAPIView(View):
                         logger.info(f"[DEBUG] S3 upload result: {upload_result}")
                         if upload_result:
                             avatar.chatbot_avatar = s3_key
-                            logger.info(f"[DEBUG] Avatar record updated with S3 key: {s3_key}")
+                            logger.info(
+                                f"[DEBUG] Avatar record updated with S3 key: {s3_key}",
+                            )
                         else:
                             logger.error("[ERROR] S3 upload returned None")
-                            raise Exception("S3 upload failed - returned None")
+                            raise RuntimeError("S3 upload failed - returned None")
                     except Exception as e:
                         logger.exception(f"[ERROR] S3 upload failed: {e}")
                         # For production, we can't fallback to local storage
                         # Return error instead of saving invalid path
-                        return JsonResponse({"error": f"Failed to upload avatar to S3: {e!s}"}, status=500)
-                
+                        return JsonResponse(
+                            {"error": f"Failed to upload avatar to S3: {e!s}"},
+                            status=500,
+                        )
+
                 avatar.save()
-                
-                return JsonResponse({"message": "Avatar updated successfully."}, status=200)
-            
+
+                return JsonResponse(
+                    {"message": "Avatar updated successfully."},
+                    status=200,
+                )
+
             # Original S3-based implementation
             image_key = None
 
@@ -423,13 +513,15 @@ class AvatarDetailAPIView(View):
                 image_url = data.get("image_path")
                 edit_image = generate_avatar(
                     download("uploads", image_url),
-                    bot.name,
+                    bot,
                     bot.avatar_type,
                 )
-                image_key = edit_image.name if hasattr(edit_image, "name") else f"{bot.name}_{int(time.time())}.png"
+                image_key = (
+                    edit_image.name
+                    if hasattr(edit_image, "name")
+                    else f"{bot.name}_{int(time.time())}.png"
+                )
                 upload(edit_image, image_key)
-                # Not deleting images - will be done manually
-                # delete("uploads", image_url)
 
             avatar.bot = bot
             avatar.chatbot_avatar = image_key

@@ -23,10 +23,11 @@ class Conversation(models.Model):
     user_group = models.CharField(max_length=255, null=True, blank=True)
     survey_id = models.CharField(max_length=255, null=True, blank=True)  # Survey ID
     survey_meta_data = models.TextField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
     )  # Survey metadata (can be long)
     started_time = models.DateTimeField(auto_now_add=True)  # Start time
-    
+
     # Track which persona was randomly selected for this conversation
     selected_persona = models.ForeignKey(
         Persona,
@@ -58,36 +59,231 @@ class Utterance(models.Model):
 
     # new fields added for voice chat
     audio_file = models.FileField(
-        upload_to="utterance_audio/", null=True, blank=True,
+        upload_to="utterance_audio/",
+        null=True,
+        blank=True,
     )  # path to saved audio
     # to distinguish voice vs text utterances
     is_voice = models.BooleanField(default=False)
-    
+
     # Store the instruction prompt that was passed to the LLM for this utterance
     instruction_prompt = models.TextField(
-        null=True, 
+        null=True,
         blank=True,
-        help_text="The instruction prompt (bot prompt + persona) that was passed to the LLM for this utterance"
+        help_text="The instruction prompt (bot prompt + persona) that was passed to the LLM for this utterance",
     )
-    
+
     # Store the chat history that was passed to the LLM for this utterance
     chat_history_used = models.TextField(
         null=True,
         blank=True,
-        help_text="The chat history (formatted as JSON) that was actually passed to the LLM for this utterance"
+        help_text="The chat history (formatted as JSON) that was actually passed to the LLM for this utterance",
     )
 
     def __str__(self):
         return f"{self.speaker_id}: {self.text[:50]}"
 
 
+class ModelProvider(models.Model):
+    """Model provider (e.g., OpenAI, Anthropic)"""
+
+    name = models.CharField(max_length=255, unique=True)
+    display_name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.display_name
+
+    class Meta:
+        ordering = ["name"]
+
+    @classmethod
+    def get_or_create_default_providers(cls):
+        """Create default providers if they don't exist"""
+        providers_data = {
+            "OpenAI": {
+                "display_name": "OpenAI",
+                "description": "OpenAI's language models including GPT series",
+            },
+            "Anthropic": {
+                "display_name": "Anthropic",
+                "description": "Anthropic's Claude language models",
+            },
+        }
+
+        providers = {}
+        for name, data in providers_data.items():
+            provider, created = cls.objects.get_or_create(
+                name=name,
+                defaults=data,
+            )
+            providers[name] = provider
+        return providers
+
+
+class Model(models.Model):
+    """AI model with capabilities and provider relationship"""
+
+    provider = models.ForeignKey(
+        ModelProvider,
+        on_delete=models.CASCADE,
+        related_name="models",
+    )
+    model_id = models.CharField(
+        max_length=255,
+        help_text="The actual model ID used by the provider",
+    )
+    display_name = models.CharField(max_length=255, help_text="Human-readable name")
+    description = models.TextField(blank=True)
+    capabilities = models.JSONField(
+        default=list,
+        help_text="List of capabilities like ['Chat', 'Reasoning', 'Code']",
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.provider.display_name} - {self.display_name}"
+
+    class Meta:
+        unique_together = ["provider", "model_id"]
+        ordering = ["provider__name", "display_name"]
+
+    @classmethod
+    def get_or_create_default_models(cls):
+        """Create default models if they don't exist"""
+        # First ensure providers exist
+        providers = ModelProvider.get_or_create_default_providers()
+
+        models_data = {
+            "OpenAI": [
+                {
+                    "model_id": "gpt-5",
+                    "display_name": "GPT-5",
+                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
+                },
+                {
+                    "model_id": "gpt-5-mini",
+                    "display_name": "GPT-5 Mini",
+                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
+                },
+                {
+                    "model_id": "gpt-5-nano",
+                    "display_name": "GPT-5 Nano",
+                    "capabilities": ["Chat", "Basic Reasoning", "Code"],
+                },
+                {
+                    "model_id": "gpt-4o",
+                    "display_name": "GPT-4o",
+                    "capabilities": ["Chat", "Vision", "Audio", "Reasoning"],
+                },
+                {
+                    "model_id": "gpt-4o-mini",
+                    "display_name": "GPT-4o Mini",
+                    "capabilities": ["Chat", "Vision", "Audio", "Reasoning"],
+                },
+                {
+                    "model_id": "gpt-4.1",
+                    "display_name": "GPT-4.1",
+                    "capabilities": ["Chat", "Reasoning", "Analysis"],
+                },
+                {
+                    "model_id": "gpt-4.1-mini",
+                    "display_name": "GPT-4.1 Mini",
+                    "capabilities": ["Chat", "Reasoning", "Analysis"],
+                },
+                {
+                    "model_id": "gpt-4.1-nano",
+                    "display_name": "GPT-4.1 Nano",
+                    "capabilities": ["Chat", "Basic Reasoning"],
+                },
+                {
+                    "model_id": "gpt-3.5-turbo",
+                    "display_name": "GPT-3.5 Turbo",
+                    "capabilities": ["Chat", "Code", "Analysis"],
+                },
+            ],
+            "Anthropic": [
+                {
+                    "model_id": "claude-opus-4-1-20250805",
+                    "display_name": "Claude Opus 4.1",
+                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
+                },
+                {
+                    "model_id": "claude-opus-4-20250514",
+                    "display_name": "Claude Opus 4",
+                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
+                },
+                {
+                    "model_id": "claude-sonnet-4-20250514",
+                    "display_name": "Claude Sonnet 4",
+                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
+                },
+                {
+                    "model_id": "claude-3-5-sonnet-20241022",
+                    "display_name": "Claude 3.5 Sonnet",
+                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
+                },
+                {
+                    "model_id": "claude-3-5-haiku-20241022",
+                    "display_name": "Claude 3.5 Haiku",
+                    "capabilities": ["Chat", "Basic Reasoning", "Code"],
+                },
+                {
+                    "model_id": "claude-3-haiku-20240307",
+                    "display_name": "Claude 3 Haiku",
+                    "capabilities": ["Chat", "Basic Reasoning", "Code"],
+                },
+            ],
+        }
+
+        created_models = []
+        for provider_name, models_list in models_data.items():
+            provider = providers[provider_name]
+            for model_data in models_list:
+                model, created = cls.objects.get_or_create(
+                    provider=provider,
+                    model_id=model_data["model_id"],
+                    defaults={
+                        "display_name": model_data["display_name"],
+                        "capabilities": model_data["capabilities"],
+                    },
+                )
+                if created:
+                    created_models.append(model)
+
+        return created_models
+
+
 class Bot(models.Model):
     # Make name the unique identifier
     name = models.CharField(max_length=255, unique=True, default="DefaultBotName")
     prompt = models.TextField()  # Bot's prompt
-    # Model type (e.g., OpenAI, Anthropic)
-    model_type = models.CharField(max_length=255, default="OpenAI")
-    model_id = models.CharField(max_length=255, default="gpt-4")  # Model ID, optional
+    # Use foreign key to Model instead of separate model_type and model_id
+    # Keep old fields for migration compatibility
+    model_type = models.CharField(
+        max_length=255,
+        default="OpenAI",
+        null=True,
+        blank=True,
+    )
+    model_id = models.CharField(
+        max_length=255,
+        default="gpt-4o-mini",
+        null=True,
+        blank=True,
+    )
+    ai_model = models.ForeignKey(
+        Model,
+        on_delete=models.CASCADE,
+        related_name="bots",
+        null=False,
+        blank=False,
+    )
     initial_utterance = models.TextField(blank=True, null=True)
 
     # New Column:
@@ -97,9 +293,18 @@ class Bot(models.Model):
         ("user", "User Provided"),
     ]
     avatar_type = models.CharField(
-        max_length=20, choices=AVATAR_CHOICES, default="none",
+        max_length=20,
+        choices=AVATAR_CHOICES,
+        default="none",
     )
-    
+
+    # Avatar generation prompt
+    avatar_prompt = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Prompt used for generating bot avatars. If empty, will use default prompt.",
+    )
+
     # Message chunking control (bot-specific)
     chunk_messages = models.BooleanField(
         default=True,
@@ -111,7 +316,7 @@ class Bot(models.Model):
         default=True,
         help_text="If true, apply human-like typing delays; if false, show messages instantly",
     )
-    
+
     # Humanlike delay configuration (bot-specific)
     typing_speed_min_ms = models.IntegerField(
         default=100,
@@ -163,7 +368,7 @@ class Bot(models.Model):
 
     # Transcript length control
     max_transcript_length = models.IntegerField(
-        default=0,
+        default=-1,
         help_text="Maximum number of messages to include in chat history. 0 = no chat history (only current message), 1+ = include that many most recent messages, negative = unlimited history.",
     )
 
@@ -177,6 +382,24 @@ class Bot(models.Model):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def get_default_model(cls):
+        """Get or create a default model for bots"""
+        # Ensure default models exist
+        Model.get_or_create_default_models()
+
+        # Return the first available model (preferably GPT-4o Mini)
+        try:
+            return (
+                Model.objects.filter(
+                    provider__name="OpenAI",
+                    model_id="gpt-4o-mini",
+                ).first()
+                or Model.objects.first()
+            )
+        except Exception:
+            return None
 
 
 class Keystroke(models.Model):
@@ -201,17 +424,20 @@ class Avatar(models.Model):
         ("dissimilar", "dissimilar"),
     ]
     bot = models.ForeignKey(
-        Bot, on_delete=models.CASCADE, related_name="avatars", null=True, blank=True,
+        Bot,
+        on_delete=models.CASCADE,
+        related_name="avatars",
+        null=True,
+        blank=True,
     )
     bot_conversation = models.CharField(max_length=255, null=True, blank=True)
     condition = models.CharField(
-        max_length=20, choices=CONDITION_CHOICES, default="similar",
+        max_length=20,
+        choices=CONDITION_CHOICES,
+        default="similar",
     )
     participant_avatar = models.TextField(null=True, blank=True)
     chatbot_avatar = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"Avatar for Conversation {self.bot.name} {self.bot.avatar_type} {self.condition} {self.participant_avatar} {self.chatbot_avatar}"
-
-
-

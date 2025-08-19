@@ -1,46 +1,46 @@
-import React, { useState, useEffect } from "react";
-import "../styles/EditBots.css";
+import React, { useState, useEffect } from 'react';
+import '../styles/EditBots.css';
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
 function EditBots() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState('');
 
   const [bots, setBots] = useState([]);
   const [newBot, setNewBot] = useState({
-    name: "",
-    model_type: "",
-    model_id: "",
-    prompt: "",
-    initial_utterance: "", // ✅ NEW
-    avatar_type: "none",   // ✅ NEW
+    name: '',
+    model_type: '',
+    model_id: '',
+    prompt: '',
+    initial_utterance: '', // ✅ NEW
+    avatar_type: 'none', // ✅ NEW
   });
   const [avatar, setAvatar] = useState({
-    bot_name: "",
-    file: "",
-  })
+    bot_name: '',
+    file: '',
+  });
 
   const [editBotId, setEditBotId] = useState(null);
   const [editForm, setEditForm] = useState({
-    name: "",
-    model_type: "",
-    model_id: "",
-    prompt: "",
-    initial_utterance: "", // ✅ NEW
-    avatar_type: "none",   // ✅ NEW
+    name: '',
+    model_type: '',
+    model_id: '',
+    prompt: '',
+    initial_utterance: '', // ✅ NEW
+    avatar_type: 'none', // ✅ NEW
   });
   const [editAvatar, setEditAvatar] = useState({
-    bot_name: "",
-    file: "",
-  })
+    bot_name: '',
+    file: '',
+  });
 
-  const handleLogin = (e) => {
+  const handleLogin = e => {
     e.preventDefault();
-    if (password === "humanlikebots12345$") {
+    if (password === 'humanlikebots12345$') {
       setIsLoggedIn(true);
     } else {
-      alert("Invalid password!");
+      alert('Invalid password!');
     }
   };
 
@@ -58,14 +58,15 @@ function EditBots() {
     }
   };
 
-  const handleAddBot = async (e) => {
+  const handleAddBot = async e => {
     e.preventDefault();
     try {
-      if (newBot.avatar_type==="default" && !avatar.file) return alert("Please select a file first");
+      if (newBot.avatar_type === 'default' && !avatar.file)
+        return alert('Please select a file first');
 
       const response = await fetch(`${BASE_URL}/bots/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newBot),
       });
       if (!response.ok) throw new Error(`Failed to create new bot`);
@@ -80,46 +81,47 @@ function EditBots() {
       });
 
       setNewBot({
-        name: "",
-        model_type: "",
-        model_id: "",
-        prompt: "",
-        initial_utterance: "",
-        avatar_type: "none",
+        name: '',
+        model_type: '',
+        model_id: '',
+        prompt: '',
+        initial_utterance: '',
+        avatar_type: 'none',
       });
       setAvatar({
-        bot_name: "",
-        file: "",
-      })
+        bot_name: '',
+        file: '',
+      });
       fetchBots();
     } catch (error) {
       alert(`Error adding bot: ${error.message}`);
     }
   };
 
-  const handleEditClick = (bot) => {
+  const handleEditClick = bot => {
     setEditBotId(bot.id);
     setEditForm({
       name: bot.name,
       model_type: bot.model_type,
       model_id: bot.model_id,
       prompt: bot.prompt,
-      initial_utterance: bot.initial_utterance || "", // ✅ NEW
-      avatar_type: bot.avatar_type || "none",         // ✅ NEW
+      initial_utterance: bot.initial_utterance || '', // ✅ NEW
+      avatar_type: bot.avatar_type || 'none', // ✅ NEW
     });
     setEditAvatar({
       bot_name: bot.name,
     });
   };
 
-  const handleUpdateBot = async (e) => {
+  const handleUpdateBot = async e => {
     e.preventDefault();
     if (!editBotId) return;
-    if (editForm.avatar_type==="default" && !editAvatar.file) return alert("Please select a file first");
+    if (editForm.avatar_type === 'default' && !editAvatar.file)
+      return alert('Please select a file first');
     try {
       const response = await fetch(`${BASE_URL}/bots/${editBotId}/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
       });
       if (!response.ok) throw new Error(`Failed to update bot`);
@@ -135,16 +137,16 @@ function EditBots() {
 
       setEditBotId(null);
       setEditForm({
-        name: "",
-        model_type: "",
-        model_id: "",
-        prompt: "",
-        initial_utterance: "",
-        avatar_type: "",
+        name: '',
+        model_type: '',
+        model_id: '',
+        prompt: '',
+        initial_utterance: '',
+        avatar_type: '',
       });
       setEditAvatar({
-        bot_name: "",
-        file: "",
+        bot_name: '',
+        file: '',
       });
       fetchBots();
     } catch (error) {
@@ -152,10 +154,10 @@ function EditBots() {
     }
   };
 
-  const handleDeleteBot = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this bot?")) return;
+  const handleDeleteBot = async id => {
+    if (!window.confirm('Are you sure you want to delete this bot?')) return;
     try {
-      await fetch(`${BASE_URL}/bots/${id}/`, { method: "DELETE" });
+      await fetch(`${BASE_URL}/bots/${id}/`, { method: 'DELETE' });
       fetchBots();
     } catch (error) {
       alert(`Error deleting bot: ${error.message}`);
@@ -168,11 +170,12 @@ function EditBots() {
         <h2>Researcher Login</h2>
         <form onSubmit={handleLogin}>
           <div>
-            <label>Password:</label>
+            <label htmlFor="password">Password:</label>
             <input
+              id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
             />
           </div>
@@ -191,72 +194,87 @@ function EditBots() {
       <h2>Add a New Bot</h2>
       <form onSubmit={handleAddBot}>
         <div>
-          <label>Name:</label>
+          <label htmlFor="bot-name">Name:</label>
           <input
+            id="bot-name"
             type="text"
             value={newBot.name}
             required
-            onChange={(e) => setNewBot({ ...newBot, name: e.target.value })}
+            onChange={e => setNewBot({ ...newBot, name: e.target.value })}
           />
         </div>
         <div>
-          <label>Model Type:</label>
+          <label htmlFor="model-type">Model Type:</label>
           <input
+            id="model-type"
             type="text"
             value={newBot.model_type}
             required
-            onChange={(e) =>
-              setNewBot({ ...newBot, model_type: e.target.value })
-            }
+            onChange={e => setNewBot({ ...newBot, model_type: e.target.value })}
           />
         </div>
         <div>
-          <label>Model ID:</label>
+          <label htmlFor="model-id">Model ID:</label>
           <input
+            id="model-id"
             type="text"
             value={newBot.model_id}
             required
-            onChange={(e) => setNewBot({ ...newBot, model_id: e.target.value })}
+            onChange={e => setNewBot({ ...newBot, model_id: e.target.value })}
           />
         </div>
         <div>
-          <label>Prompt:</label>
+          <label htmlFor="prompt">Prompt:</label>
           <input
+            id="prompt"
             type="text"
             value={newBot.prompt}
-            onChange={(e) => setNewBot({ ...newBot, prompt: e.target.value })}
+            onChange={e => setNewBot({ ...newBot, prompt: e.target.value })}
           />
         </div>
         <div>
-          <label>Initial Utterance (optional):</label>
+          <label htmlFor="initial-utterance">
+            Initial Utterance (optional):
+          </label>
           <input
+            id="initial-utterance"
             type="text"
             value={newBot.initial_utterance}
-            onChange={(e) =>
+            onChange={e =>
               setNewBot({ ...newBot, initial_utterance: e.target.value })
             }
           />
         </div>
         <div>
-            <label>Avatar Type: </label>
-            <select
-              value={newBot.avatar_type}
-              onChange={(e) => setNewBot({ ...newBot, avatar_type: e.target.value })}
-            >
-              <option value="none">None</option>
-              <option value="default">Default</option>
-              <option value="user">User Provided</option>
-            </select>
+          <label htmlFor="avatar-type">Avatar Type: </label>
+          <select
+            id="avatar-type"
+            value={newBot.avatar_type}
+            onChange={e =>
+              setNewBot({ ...newBot, avatar_type: e.target.value })
+            }
+          >
+            <option value="none">None</option>
+            <option value="default">Default</option>
+            <option value="user">User Provided</option>
+          </select>
         </div>
         <div>
-            {
-            newBot.avatar_type==="default" ?
-              <>
-                <label>Image:</label>
-                <input type="file" accept="image/*" onChange={(e) => setAvatar({ ...avatar, file:e.target.files[0] })} />
-              </> :
-              <></>
-            }
+          {newBot.avatar_type === 'default' ? (
+            <>
+              <label htmlFor="avatar-image">Image:</label>
+              <input
+                id="avatar-image"
+                type="file"
+                accept="image/*"
+                onChange={e =>
+                  setAvatar({ ...avatar, file: e.target.files[0] })
+                }
+              />
+            </>
+          ) : (
+            <></>
+          )}
         </div>
         <button type="submit">Add Bot</button>
       </form>
@@ -282,7 +300,7 @@ function EditBots() {
               </tr>
             </thead>
             <tbody>
-              {bots.map((bot) => (
+              {bots.map(bot => (
                 <tr key={bot.id}>
                   <td>{bot.name}</td>
                   <td>{bot.model_type}</td>
@@ -309,54 +327,61 @@ function EditBots() {
           <h2>Edit Bot (ID: {editBotId})</h2>
           <form onSubmit={handleUpdateBot}>
             <div>
-              <label>Name:</label>
+              <label htmlFor="edit-bot-name">Name:</label>
               <input
+                id="edit-bot-name"
                 type="text"
                 value={editForm.name}
                 required
-                onChange={(e) =>
+                onChange={e =>
                   setEditForm({ ...editForm, name: e.target.value })
                 }
               />
             </div>
             <div>
-              <label>Model Type:</label>
+              <label htmlFor="edit-model-type">Model Type:</label>
               <input
+                id="edit-model-type"
                 type="text"
                 value={editForm.model_type}
                 required
-                onChange={(e) =>
+                onChange={e =>
                   setEditForm({ ...editForm, model_type: e.target.value })
                 }
               />
             </div>
             <div>
-              <label>Model ID:</label>
+              <label htmlFor="edit-model-id">Model ID:</label>
               <input
+                id="edit-model-id"
                 type="text"
                 value={editForm.model_id}
                 required
-                onChange={(e) =>
+                onChange={e =>
                   setEditForm({ ...editForm, model_id: e.target.value })
                 }
               />
             </div>
             <div>
-              <label>Prompt:</label>
+              <label htmlFor="edit-prompt">Prompt:</label>
               <input
+                id="edit-prompt"
                 type="text"
                 value={editForm.prompt}
-                onChange={(e) =>
+                onChange={e =>
                   setEditForm({ ...editForm, prompt: e.target.value })
                 }
               />
             </div>
             <div>
-              <label>Initial Utterance (optional):</label>
+              <label htmlFor="edit-initial-utterance">
+                Initial Utterance (optional):
+              </label>
               <input
+                id="edit-initial-utterance"
                 type="text"
                 value={editForm.initial_utterance}
-                onChange={(e) =>
+                onChange={e =>
                   setEditForm({
                     ...editForm,
                     initial_utterance: e.target.value,
@@ -365,10 +390,13 @@ function EditBots() {
               />
             </div>
             <div>
-              <label>Avatar Type: </label>
+              <label htmlFor="edit-avatar-type">Avatar Type: </label>
               <select
+                id="edit-avatar-type"
                 value={editForm.avatar_type}
-                onChange={(e) => setEditForm({ ...editForm, avatar_type: e.target.value })}
+                onChange={e =>
+                  setEditForm({ ...editForm, avatar_type: e.target.value })
+                }
               >
                 <option value="none">None</option>
                 <option value="default">Default</option>
@@ -376,14 +404,21 @@ function EditBots() {
               </select>
             </div>
             <div>
-                {
-                editForm.avatar_type==="default" ?
-                  <>
-                    <label>Image:</label>
-                    <input type="file" accept="image/*" onChange={(e) => setEditAvatar({ ...editAvatar, file:e.target.files[0] })} />
-                  </> :
-                  <></>
-                }
+              {editForm.avatar_type === 'default' ? (
+                <>
+                  <label htmlFor="edit-avatar-image">Image:</label>
+                  <input
+                    id="edit-avatar-image"
+                    type="file"
+                    accept="image/*"
+                    onChange={e =>
+                      setEditAvatar({ ...editAvatar, file: e.target.files[0] })
+                    }
+                  />
+                </>
+              ) : (
+                <></>
+              )}
             </div>
             <button type="submit">Update Bot</button>
           </form>

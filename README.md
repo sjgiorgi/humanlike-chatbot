@@ -31,7 +31,7 @@ HUMANLIKE-CHATBOT/
     ├── server/
         ├── engine.py 
     ├── config.json # Custom Chatbot configuration 
-    ├── Dockerfile.local
+    ├── Dockerfile
     ├── manage.py
     ├── Pipfile
     ├── Pipfile.lock
@@ -61,14 +61,10 @@ HUMANLIKE-CHATBOT/
 
 ### Setup
 
-1. Clone the repository under Soojin branch:
-
-    ```bash
-    git clone git@github.com:wwbp/humanlike-chatbot.git
-    cd humanlike-chatbot
-    git checkout Soojin
-
-    ```
+1. **Branch Information**: 
+   - `main` branch is the stable production branch
+   - `staging` branch is the development environment branch  
+   - Other branches are feature branches
 
 2. Create .env file: Copy example.env and add required API for your chosen LLM model:
 
@@ -79,25 +75,19 @@ HUMANLIKE-CHATBOT/
 3. Build and run the containers for the bot:
 
     ```bash
-    docker-compose -f docker-compose.yml up --build
+    make start
     ```
 
-4. Access the Application at <http://localhost:8000/>
+4. Access the Application:
+   - Run a quick session at <http://localhost:3000/>
+   - Access admin interface at <http://localhost:8000/api/admin/> for defining bots and tracking conversations
+   - For admin interface credential setup, see the [Admin Interface](#admin-interface) section at the end of this file
 
-    ```bash
-    http://localhost:8000/
-    ```
-
-5. To stop and remove the volumes:
-
-    ```bash
-    docker-compose -f docker-compose.yml down -v
-    ```
-
-6. [Optional] Customize the config.json file located at generic_chatbot/config.json to:
-
-- Select a language model.
-- Adjust bot-specific settings like anthropomorphism and prompts
+5. **Available Commands**:
+   - `make start` - Start the containers (builds if needed)
+   - `make stop` - Stop the containers
+   - `make stop-clean` - Stop and remove volumes (clean slate)
+   - `make test` - Run all django app backend tests (requires containers to be running)
 
 ---
 
@@ -149,10 +139,11 @@ Date:26/12/2024
 
 ## Admin Interface
 
-1. **Access your Django instance**  
+1. **Access your Django instance** (run inside the backend container):
 
    ```bash
-   cd /path/to/your/project
+   docker exec -it humanlike-chatbot-backend-1 bash
+   cd /app
    ```
 
 2. **Create a superuser**  
