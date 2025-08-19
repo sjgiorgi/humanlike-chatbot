@@ -98,7 +98,7 @@ class TestTranscriptLengthSimple(TestCase):
             prompt="Test prompt",
             ai_model=self.model,
         )
-        assert bot.max_transcript_length == 0  # Default should be 0 (no chat history)
+        assert bot.max_transcript_length == -1  # Default should be -1 (unlimited chat history)
 
         # Test custom value
         bot_with_limit = Bot.objects.create(

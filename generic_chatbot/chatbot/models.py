@@ -368,7 +368,7 @@ class Bot(models.Model):
 
     # Transcript length control
     max_transcript_length = models.IntegerField(
-        default=0,
+        default=-1,
         help_text="Maximum number of messages to include in chat history. 0 = no chat history (only current message), 1+ = include that many most recent messages, negative = unlimited history.",
     )
 
