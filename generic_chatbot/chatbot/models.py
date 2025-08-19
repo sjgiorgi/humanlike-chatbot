@@ -27,16 +27,6 @@ class Conversation(models.Model):
         blank=True,
     )  # Survey metadata (can be long)
     started_time = models.DateTimeField(auto_now_add=True)  # Start time
-    
-    # Track which persona was randomly selected for this conversation
-    selected_persona = models.ForeignKey(
-        Persona,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="conversations",
-        help_text="The persona randomly selected for this conversation",
-    )
 
     # Track which persona was randomly selected for this conversation
     selected_persona = models.ForeignKey(

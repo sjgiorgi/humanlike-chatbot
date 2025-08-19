@@ -354,8 +354,6 @@ const Conversation = () => {
 
     const requestStartTime = Date.now();
 
-    const requestStartTime = Date.now();
-
     try {
       const res = await fetch(`${apiUrl}/chatbot/`, {
         method: 'POST',

@@ -16,7 +16,6 @@ RUN apt-get update && apt-get install -y \
     gcc \
     build-essential \
     netcat-openbsd \
-    nginx \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -42,7 +41,7 @@ FROM base as development
 ARG ENVIRONMENT=development
 
 # Expose the application's port
-EXPOSE 8000 80
+EXPOSE 8000
 
 # Use the wait-for-db.sh script as entrypoint
 RUN chmod +x /app/wait-for-db.sh
