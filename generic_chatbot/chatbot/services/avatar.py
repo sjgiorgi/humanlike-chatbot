@@ -433,10 +433,6 @@ class AvatarDetailAPIView(View):
                     bot,
                     bot.avatar_type,
                 )
-                image_key = edit_image.name if hasattr(edit_image, "name") else f"{bot.name}_{int(time.time())}.png"
-                upload(edit_image, image_key)
-                # Not deleting images - will be done manually
-                # delete("uploads", image_url)
 
                 # Update avatar - handle both model structures
                 logger.info(
