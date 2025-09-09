@@ -39,10 +39,6 @@ const Simulate = () => {
     navigate(`${route}?${params.toString()}`);
   };
 
-  const handleEditBots = () => {
-    navigate('/edit-bots');
-  };
-
   return (
     <div className="simulate-container">
       <form onSubmit={handleSubmit}>
@@ -110,14 +106,6 @@ const Simulate = () => {
           Start Conversation
         </button>
       </form>
-
-      <button
-        onClick={handleEditBots}
-        className="btn btn-secondary"
-        style={{ marginTop: '10px' }}
-      >
-        Manage Bots
-      </button>
     </div>
   );
 };
