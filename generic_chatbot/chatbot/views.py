@@ -87,6 +87,11 @@ class ChatbotAPIView(View):
                 bot = await sync_to_async(Bot.objects.get)(name=bot_name)
                 use_chunks = bot.chunk_messages
                 use_humanlike_delay = bot.humanlike_delay
+                # Calculate reading delay based on user message
+                words = len(message.split())
+                seconds_per_word = 60 / bot.reading_words_per_minute
+                reading_delay_ms = int(words * seconds_per_word * 1000)
+
                 delay_config = {
                     "typing_speed_min_ms": bot.typing_speed_min_ms,
                     "typing_speed_max_ms": bot.typing_speed_max_ms,
@@ -95,11 +100,17 @@ class ChatbotAPIView(View):
                     "last_chunk_pause_ms": bot.last_chunk_pause_ms,
                     "min_delay_ms": bot.min_delay_ms,
                     "max_delay_ms": bot.max_delay_ms,
+                    "reading_delay_ms": reading_delay_ms,
                 }
             except Bot.DoesNotExist:
                 # Use defaults if bot not found
                 use_chunks = True
                 use_humanlike_delay = True
+                # Calculate reading delay with default WPM
+                words = len(message.split())
+                seconds_per_word = 60 / 250  # Default 250 WPM
+                reading_delay_ms = int(words * seconds_per_word * 1000)
+
                 delay_config = {
                     "typing_speed_min_ms": 100,
                     "typing_speed_max_ms": 200,
@@ -108,6 +119,7 @@ class ChatbotAPIView(View):
                     "last_chunk_pause_ms": 100,
                     "min_delay_ms": 200,
                     "max_delay_ms": 800,
+                    "reading_delay_ms": reading_delay_ms,
                 }
 
             # split or not

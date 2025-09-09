@@ -82,6 +82,17 @@ class BotAdminForm(forms.ModelForm):
                 },
             )
 
+        # Validate follow-up configuration
+        follow_up_on_idle = cleaned_data.get("follow_up_on_idle")
+        follow_up_instruction_prompt = cleaned_data.get("follow_up_instruction_prompt")
+
+        if follow_up_on_idle and not follow_up_instruction_prompt:
+            raise ValidationError(
+                {
+                    "follow_up_instruction_prompt": "Follow-up instruction prompt is required when follow-up is enabled.",
+                },
+            )
+
         return cleaned_data
 
     def __init__(self, *args, **kwargs):
@@ -590,8 +601,9 @@ class BotAdmin(BaseAdmin):
                     "last_chunk_pause_ms",
                     "min_delay_ms",
                     "max_delay_ms",
+                    "reading_words_per_minute",
                 ),
-                "description": "Fine-tune the humanlike typing delay parameters",
+                "description": "Fine-tune the humanlike typing delay parameters. Reading words per minute controls the delay before typing starts (simulating reading time).",
                 "classes": ("collapse",),
             },
         ),

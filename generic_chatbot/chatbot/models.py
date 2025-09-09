@@ -346,6 +346,10 @@ class Bot(models.Model):
         default=800,
         help_text="Maximum delay in milliseconds (when backend is slow)",
     )
+    reading_words_per_minute = models.IntegerField(
+        default=250,
+        help_text="Words per minute reading speed for calculating reading delay",
+    )
 
     # Follow-up on idle settings
     follow_up_on_idle = models.BooleanField(
