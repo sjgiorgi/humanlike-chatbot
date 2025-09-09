@@ -380,12 +380,20 @@ const Conversation = () => {
       const chunks = data.response_chunks || [data.response];
       const useHumanlikeDelay = data.humanlike_delay !== false; // Default to true if not specified
       const delayConfig = data.delay_config || null;
+      const readingDelayMs = delayConfig?.reading_delay_ms || 0;
+
       // console.log(
-      //   `📝 Response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}`,
+      //   `📝 Response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}, reading delay: ${readingDelayMs}ms`,
       //   delayConfig
       // );
-      setIsTyping(true);
-      revealChunks(chunks, backendTimeMs, useHumanlikeDelay, delayConfig);
+
+      // Delay typing indicator appearance by reading delay
+      setTimeout(() => {
+        if (useHumanlikeDelay) {
+          setIsTyping(true);
+        }
+        revealChunks(chunks, backendTimeMs, useHumanlikeDelay, delayConfig);
+      }, readingDelayMs);
     } catch (err) {
       // console.error('Error sending message:', err);
       alert('An error occurred. Please try again.');
