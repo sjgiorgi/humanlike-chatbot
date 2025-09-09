@@ -82,6 +82,17 @@ class BotAdminForm(forms.ModelForm):
                 },
             )
 
+        # Validate follow-up configuration
+        follow_up_on_idle = cleaned_data.get("follow_up_on_idle")
+        follow_up_instruction_prompt = cleaned_data.get("follow_up_instruction_prompt")
+
+        if follow_up_on_idle and not follow_up_instruction_prompt:
+            raise ValidationError(
+                {
+                    "follow_up_instruction_prompt": "Follow-up instruction prompt is required when follow-up is enabled.",
+                },
+            )
+
         return cleaned_data
 
     def __init__(self, *args, **kwargs):
