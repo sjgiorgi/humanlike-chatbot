@@ -66,29 +66,10 @@ async def run_followup_chat_round(
 
     from server.engine import get_or_create_engine
 
-    from .moderation import moderate_message
-
     # Fetch bot object with personas prefetched
     bot = await sync_to_async(Bot.objects.prefetch_related("personas").get)(
         name=bot_name,
     )
-
-    # Moderate the followup instruction (though it should be safe)
-    blocked = await sync_to_async(moderate_message)(followup_instruction)
-    if blocked:
-        warning_text = (
-            f"Followup instruction was blocked by moderation due to: {blocked}"
-        )
-        # Only save the warning response, not the followup request
-        await save_chat_to_db(
-            conversation_id=conversation_id,
-            speaker_id="assistant",
-            text=warning_text,
-            bot_name=bot.name,
-            participant_id=None,
-            instruction_prompt=bot.prompt,  # Use bot prompt for moderation responses
-        )
-        return warning_text
 
     # Retrieve history from cache
     cache_key = f"conversation_cache_{conversation_id}"

@@ -15,13 +15,16 @@ class Persona(models.Model):
 
 
 class Conversation(models.Model):
-    conversation_id = models.CharField(max_length=255, unique=True)  # Conversation ID
-    bot_name = models.CharField(max_length=255, default="DefaultBot")  # Bot Name
+    conversation_id = models.CharField(
+        max_length=255, unique=True)  # Conversation ID
+    bot_name = models.CharField(
+        max_length=255, default="DefaultBot")  # Bot Name
     participant_id = models.CharField(max_length=255)
     initial_utterance = models.CharField(max_length=255, null=True, blank=True)
     study_name = models.CharField(max_length=255, null=True, blank=True)
     user_group = models.CharField(max_length=255, null=True, blank=True)
-    survey_id = models.CharField(max_length=255, null=True, blank=True)  # Survey ID
+    survey_id = models.CharField(
+        max_length=255, null=True, blank=True)  # Survey ID
     survey_meta_data = models.TextField(
         null=True,
         blank=True,
@@ -116,7 +119,7 @@ class ModelProvider(models.Model):
 
         providers = {}
         for name, data in providers_data.items():
-            provider, created = cls.objects.get_or_create(
+            provider, _ = cls.objects.get_or_create(
                 name=name,
                 defaults=data,
             )
@@ -136,7 +139,8 @@ class Model(models.Model):
         max_length=255,
         help_text="The actual model ID used by the provider",
     )
-    display_name = models.CharField(max_length=255, help_text="Human-readable name")
+    display_name = models.CharField(
+        max_length=255, help_text="Human-readable name")
     description = models.TextField(blank=True)
     capabilities = models.JSONField(
         default=list,
@@ -259,9 +263,31 @@ class Model(models.Model):
         return created_models
 
 
+class ModerationSettings(models.Model):
+    enabled = models.BooleanField(
+        default=True,
+        help_text="When disabled, all content moderation is bypassed globally",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Global Moderation Setting"
+        verbose_name_plural = "Global Moderation Settings"
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton pattern
+        if not self.pk and ModerationSettings.objects.exists():
+            raise ValueError("Only one ModerationSettings record is allowed")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Moderation {'Enabled' if self.enabled else 'Disabled'}"
+
+
 class Bot(models.Model):
     # Make name the unique identifier
-    name = models.CharField(max_length=255, unique=True, default="DefaultBotName")
+    name = models.CharField(max_length=255, unique=True,
+                            default="DefaultBotName")
     prompt = models.TextField()  # Bot's prompt
     # Use foreign key to Model instead of separate model_type and model_id
     # Keep old fields for migration compatibility
@@ -376,6 +402,74 @@ class Bot(models.Model):
         help_text="Maximum number of messages to include in chat history. 0 = no chat history (only current message), 1+ = include that many most recent messages, negative = unlimited history.",
     )
 
+    # Moderation settings - individual fields for each category
+    moderation_harassment = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.50,
+        help_text="Harassment threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_harassment_threatening = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.10,
+        help_text="Harassment/threatening threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_hate = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.50,
+        help_text="Hate threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_hate_threatening = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.10,
+        help_text="Hate/threatening threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_self_harm = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.20,
+        help_text="Self-harm threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_self_harm_instructions = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.50,
+        help_text="Self-harm/instructions threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_self_harm_intent = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.70,
+        help_text="Self-harm/intent threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_sexual = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.50,
+        help_text="Sexual threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_sexual_minors = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.20,
+        help_text="Sexual/minors threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_violence = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.70,
+        help_text="Violence threshold (0.0-1.0, lower = stricter)",
+    )
+    moderation_violence_graphic = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.80,
+        help_text="Violence/graphic threshold (0.0-1.0, lower = stricter)",
+    )
+
     # Many-to-many relationship with personas
     personas = models.ManyToManyField(
         Persona,
@@ -386,6 +480,23 @@ class Bot(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_moderation_threshold(self, category):
+        """Get moderation threshold for a category."""
+        field_mapping = {
+            "harassment": self.moderation_harassment,
+            "harassment/threatening": self.moderation_harassment_threatening,
+            "hate": self.moderation_hate,
+            "hate/threatening": self.moderation_hate_threatening,
+            "self-harm": self.moderation_self_harm,
+            "self-harm/instructions": self.moderation_self_harm_instructions,
+            "self-harm/intent": self.moderation_self_harm_intent,
+            "sexual": self.moderation_sexual,
+            "sexual/minors": self.moderation_sexual_minors,
+            "violence": self.moderation_violence,
+            "violence/graphic": self.moderation_violence_graphic,
+        }
+        return float(field_mapping.get(category, 1.0))
 
     @classmethod
     def get_default_model(cls):
