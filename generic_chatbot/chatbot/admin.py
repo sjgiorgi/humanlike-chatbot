@@ -15,6 +15,7 @@ from .models import (
     Bot,
     Conversation,
     Keystroke,
+    ModerationSettings,
     Persona,
     Utterance,
 )
@@ -84,7 +85,8 @@ class BotAdminForm(forms.ModelForm):
 
         # Validate follow-up configuration
         follow_up_on_idle = cleaned_data.get("follow_up_on_idle")
-        follow_up_instruction_prompt = cleaned_data.get("follow_up_instruction_prompt")
+        follow_up_instruction_prompt = cleaned_data.get(
+            "follow_up_instruction_prompt")
 
         if follow_up_on_idle and not follow_up_instruction_prompt:
             raise ValidationError(
@@ -462,10 +464,12 @@ class BotAdmin(BaseAdmin):
         "recurring_followup",
         "max_transcript_length",
         "get_persona_count",
+        "moderation_summary",
         "avatar_preview",
     )
     list_display_links = ("name",)
-    search_fields = ("name", "ai_model__provider__name", "ai_model__display_name")
+    search_fields = ("name", "ai_model__provider__name",
+                     "ai_model__display_name")
     list_filter = (
         "ai_model__provider",
         "avatar_type",
@@ -519,7 +523,8 @@ class BotAdmin(BaseAdmin):
                     from pathlib import Path
 
                     local_path = (
-                        Path(settings.MEDIA_ROOT) / "avatars" / avatar.chatbot_avatar
+                        Path(settings.MEDIA_ROOT) /
+                        "avatars" / avatar.chatbot_avatar
                     )
                     if local_path.exists():
                         image_url = f"/media/avatars/{avatar.chatbot_avatar}"
@@ -546,6 +551,38 @@ class BotAdmin(BaseAdmin):
         return format_html('<span class="no-avatar">No avatar</span>')
 
     avatar_preview.short_description = "Avatar"
+
+    def moderation_summary(self, obj):
+        """Display moderation settings summary"""
+        # Check if any values differ from defaults
+        defaults = {
+            "moderation_harassment": 0.50,
+            "moderation_harassment_threatening": 0.10,
+            "moderation_hate": 0.50,
+            "moderation_hate_threatening": 0.10,
+            "moderation_self_harm": 0.20,
+            "moderation_self_harm_instructions": 0.50,
+            "moderation_self_harm_intent": 0.70,
+            "moderation_sexual": 0.50,
+            "moderation_sexual_minors": 0.20,
+            "moderation_violence": 0.70,
+            "moderation_violence_graphic": 0.80,
+        }
+
+        custom_count = 0
+        for field_name, default_value in defaults.items():
+            current_value = float(getattr(obj, field_name))
+            if current_value != default_value:
+                custom_count += 1
+
+        if custom_count == 0:
+            return format_html('<span class="default-moderation">Using defaults</span>')
+        else:
+            return format_html(
+                '<span class="custom-moderation">{} custom values</span>', custom_count
+            )
+
+    moderation_summary.short_description = "Moderation"
 
     fieldsets = (
         (
@@ -617,6 +654,24 @@ class BotAdmin(BaseAdmin):
                     "recurring_followup",
                 ),
                 "description": "Configure automatic follow-up messages when users are idle. The follow-up instruction prompt is sent as an admin message to the LLM (not a user message) and cannot be empty when follow-up is enabled. Best practice: Write instructions that ask the bot to use available conversation context to write a natural follow-up message.",
+            },
+        ),
+        (
+            "Moderation Settings",
+            {
+                "fields": (
+                    ("moderation_harassment", "moderation_harassment_threatening"),
+                    ("moderation_hate", "moderation_hate_threatening"),
+                    (
+                        "moderation_self_harm",
+                        "moderation_self_harm_instructions",
+                        "moderation_self_harm_intent",
+                    ),
+                    ("moderation_sexual", "moderation_sexual_minors"),
+                    ("moderation_violence", "moderation_violence_graphic"),
+                ),
+                "description": "Moderation thresholds for each category (0.0-1.0). Lower values = stricter moderation. Leave at defaults unless you need custom values.",
+                "classes": ("collapse",),
             },
         ),
     )
@@ -736,7 +791,8 @@ class BotAdmin(BaseAdmin):
                                 f"Successfully uploaded raw image to S3: {raw_image_key}",
                             )
                         except Exception as e:
-                            logger.error(f"Failed to upload raw image to S3: {e}")
+                            logger.error(
+                                f"Failed to upload raw image to S3: {e}")
                             raise RuntimeError(
                                 f"Failed to upload raw image to S3: {e!s}",
                             )
@@ -754,7 +810,8 @@ class BotAdmin(BaseAdmin):
                                 f"Successfully downloaded image from S3: {raw_image_key}",
                             )
                         except Exception as e:
-                            logger.error(f"Failed to download image from S3: {e}")
+                            logger.error(
+                                f"Failed to download image from S3: {e}")
                             # Clean up raw image on failure
                             s3.delete_object(
                                 Bucket=os.getenv("AWS_BUCKET_NAME"),
@@ -781,7 +838,8 @@ class BotAdmin(BaseAdmin):
                                     # Upload processed image to S3
                                     upload_result = upload(image, image_key)
                                     if not upload_result:
-                                        raise RuntimeError("S3 upload returned None")
+                                        raise RuntimeError(
+                                            "S3 upload returned None")
 
                                     # Clean up raw image (use direct S3 delete to avoid avatar prefix)
                                     s3.delete_object(
@@ -801,7 +859,8 @@ class BotAdmin(BaseAdmin):
                                     if not created:
                                         # Delete old avatar from S3 if exists
                                         if avatar.chatbot_avatar:
-                                            delete("avatar", avatar.chatbot_avatar)
+                                            delete(
+                                                "avatar", avatar.chatbot_avatar)
                                         avatar.chatbot_avatar = image_key
                                         avatar.save()
 
@@ -988,7 +1047,8 @@ class AvatarAdmin(BaseAdmin):
                     from pathlib import Path
 
                     local_path = (
-                        Path(settings.MEDIA_ROOT) / "avatars" / obj.chatbot_avatar
+                        Path(settings.MEDIA_ROOT) /
+                        "avatars" / obj.chatbot_avatar
                     )
                     if local_path.exists():
                         image_url = f"/media/avatars/{obj.chatbot_avatar}"
@@ -1050,7 +1110,8 @@ class AvatarAdmin(BaseAdmin):
                     from pathlib import Path
 
                     local_path = (
-                        Path(settings.MEDIA_ROOT) / "avatars" / obj.chatbot_avatar
+                        Path(settings.MEDIA_ROOT) /
+                        "avatars" / obj.chatbot_avatar
                     )
                     if local_path.exists():
                         chatbot_url = f"/media/avatars/{obj.chatbot_avatar}"
@@ -1145,7 +1206,8 @@ class AvatarAdmin(BaseAdmin):
                 try:
                     delete("avatar", avatar.participant_avatar)
                 except Exception as e:
-                    errors.append(f"Avatar {avatar.id} participant file: {e!s}")
+                    errors.append(
+                        f"Avatar {avatar.id} participant file: {e!s}")
 
             if avatar.chatbot_avatar:
                 try:
@@ -1162,7 +1224,8 @@ class AvatarAdmin(BaseAdmin):
 
         # Report any errors
         for error in errors:
-            self.message_user(request, f"Error deleting {error}", level="ERROR")
+            self.message_user(
+                request, f"Error deleting {error}", level="ERROR")
 
         self.message_user(
             request,
@@ -1214,3 +1277,22 @@ class KeystrokeAdmin(BaseAdmin):
             },
         ),
     )
+
+
+@admin.register(ModerationSettings)
+class ModerationSettingsAdmin(BaseAdmin):
+    list_display = ("enabled", "updated_at")
+    list_display_links = None
+    list_editable = ("enabled",)
+
+    def has_add_permission(self, request):
+        return False  # Never allow manual creation
+
+    def has_delete_permission(self, request, obj=None):
+        return False  # Never allow deletion
+
+    def changelist_view(self, request, extra_context=None):
+        # Auto-create default record if none exists
+        if not ModerationSettings.objects.exists():
+            ModerationSettings.objects.create(enabled=True)
+        return super().changelist_view(request, extra_context)
