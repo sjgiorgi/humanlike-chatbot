@@ -119,7 +119,7 @@ class ModelProvider(models.Model):
 
         providers = {}
         for name, data in providers_data.items():
-            provider, created = cls.objects.get_or_create(
+            provider, _ = cls.objects.get_or_create(
                 name=name,
                 defaults=data,
             )
@@ -263,6 +263,27 @@ class Model(models.Model):
         return created_models
 
 
+class ModerationSettings(models.Model):
+    enabled = models.BooleanField(
+        default=True,
+        help_text="When disabled, all content moderation is bypassed globally",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Global Moderation Setting"
+        verbose_name_plural = "Global Moderation Settings"
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton pattern
+        if not self.pk and ModerationSettings.objects.exists():
+            raise ValueError("Only one ModerationSettings record is allowed")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Moderation {'Enabled' if self.enabled else 'Disabled'}"
+
+
 class Bot(models.Model):
     # Make name the unique identifier
     name = models.CharField(max_length=255, unique=True,
@@ -383,48 +404,70 @@ class Bot(models.Model):
 
     # Moderation settings - individual fields for each category
     moderation_harassment = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.50,
-        help_text="Harassment threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.50,
+        help_text="Harassment threshold (0.0-1.0, lower = stricter)",
     )
     moderation_harassment_threatening = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.10,
-        help_text="Harassment/threatening threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.10,
+        help_text="Harassment/threatening threshold (0.0-1.0, lower = stricter)",
     )
     moderation_hate = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.50,
-        help_text="Hate threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.50,
+        help_text="Hate threshold (0.0-1.0, lower = stricter)",
     )
     moderation_hate_threatening = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.10,
-        help_text="Hate/threatening threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.10,
+        help_text="Hate/threatening threshold (0.0-1.0, lower = stricter)",
     )
     moderation_self_harm = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.20,
-        help_text="Self-harm threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.20,
+        help_text="Self-harm threshold (0.0-1.0, lower = stricter)",
     )
     moderation_self_harm_instructions = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.50,
-        help_text="Self-harm/instructions threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.50,
+        help_text="Self-harm/instructions threshold (0.0-1.0, lower = stricter)",
     )
     moderation_self_harm_intent = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.70,
-        help_text="Self-harm/intent threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.70,
+        help_text="Self-harm/intent threshold (0.0-1.0, lower = stricter)",
     )
     moderation_sexual = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.50,
-        help_text="Sexual threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.50,
+        help_text="Sexual threshold (0.0-1.0, lower = stricter)",
     )
     moderation_sexual_minors = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.20,
-        help_text="Sexual/minors threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.20,
+        help_text="Sexual/minors threshold (0.0-1.0, lower = stricter)",
     )
     moderation_violence = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.70,
-        help_text="Violence threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.70,
+        help_text="Violence threshold (0.0-1.0, lower = stricter)",
     )
     moderation_violence_graphic = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.80,
-        help_text="Violence/graphic threshold (0.0-1.0, lower = stricter)"
+        max_digits=3,
+        decimal_places=2,
+        default=0.80,
+        help_text="Violence/graphic threshold (0.0-1.0, lower = stricter)",
     )
 
     # Many-to-many relationship with personas

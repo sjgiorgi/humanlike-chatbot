@@ -56,7 +56,7 @@ def test_followup_not_saved_to_db():
     time.sleep(2)
 
     # Generate followup message
-    response_text, error = asyncio.run(
+    _response_text, error = asyncio.run(
         generate_followup_message(
             bot_name=BOT_NAME,
             conversation_id=CONVERSATION_ID,

@@ -53,7 +53,7 @@ def test_simple_followup():
     utterance.save()
 
     # Test 1: Generate first followup
-    response1, error1 = asyncio.run(
+    _response1, error1 = asyncio.run(
         generate_followup_message(
             bot_name=BOT_NAME,
             conversation_id=CONVERSATION_ID,
@@ -65,7 +65,7 @@ def test_simple_followup():
         return False
 
     # Test 2: Try to generate second followup immediately (should be rate limited)
-    response2, error2 = asyncio.run(
+    _response2, error2 = asyncio.run(
         generate_followup_message(
             bot_name=BOT_NAME,
             conversation_id=CONVERSATION_ID,
@@ -86,7 +86,7 @@ def test_simple_followup():
     )
 
     # Test 4: Try followup again after user message (should work)
-    response3, error3 = asyncio.run(
+    _response3, error3 = asyncio.run(
         generate_followup_message(
             bot_name=BOT_NAME,
             conversation_id=CONVERSATION_ID,

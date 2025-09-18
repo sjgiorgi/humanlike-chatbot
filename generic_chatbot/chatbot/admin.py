@@ -15,6 +15,7 @@ from .models import (
     Bot,
     Conversation,
     Keystroke,
+    ModerationSettings,
     Persona,
     Utterance,
 )
@@ -577,7 +578,9 @@ class BotAdmin(BaseAdmin):
         if custom_count == 0:
             return format_html('<span class="default-moderation">Using defaults</span>')
         else:
-            return format_html('<span class="custom-moderation">{} custom values</span>', custom_count)
+            return format_html(
+                '<span class="custom-moderation">{} custom values</span>', custom_count
+            )
 
     moderation_summary.short_description = "Moderation"
 
@@ -659,8 +662,11 @@ class BotAdmin(BaseAdmin):
                 "fields": (
                     ("moderation_harassment", "moderation_harassment_threatening"),
                     ("moderation_hate", "moderation_hate_threatening"),
-                    ("moderation_self_harm", "moderation_self_harm_instructions",
-                     "moderation_self_harm_intent"),
+                    (
+                        "moderation_self_harm",
+                        "moderation_self_harm_instructions",
+                        "moderation_self_harm_intent",
+                    ),
                     ("moderation_sexual", "moderation_sexual_minors"),
                     ("moderation_violence", "moderation_violence_graphic"),
                 ),
@@ -1271,3 +1277,22 @@ class KeystrokeAdmin(BaseAdmin):
             },
         ),
     )
+
+
+@admin.register(ModerationSettings)
+class ModerationSettingsAdmin(BaseAdmin):
+    list_display = ("enabled", "updated_at")
+    list_display_links = None
+    list_editable = ("enabled",)
+
+    def has_add_permission(self, request):
+        return False  # Never allow manual creation
+
+    def has_delete_permission(self, request, obj=None):
+        return False  # Never allow deletion
+
+    def changelist_view(self, request, extra_context=None):
+        # Auto-create default record if none exists
+        if not ModerationSettings.objects.exists():
+            ModerationSettings.objects.create(enabled=True)
+        return super().changelist_view(request, extra_context)
