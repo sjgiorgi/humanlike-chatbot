@@ -8,7 +8,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Bot
-from .services.post_processing import human_like_chunks
+from .services.post_processing import human_like_chunks, calculate_typing_delays
 from .services.runchat import run_chat_round
 
 # Get logger for this module
@@ -87,54 +87,71 @@ class ChatbotAPIView(View):
                 bot = await sync_to_async(Bot.objects.get)(name=bot_name)
                 use_chunks = bot.chunk_messages
                 use_humanlike_delay = bot.humanlike_delay
-                # Calculate reading delay based on user message
-                words = len(message.split())
-                seconds_per_word = 60 / bot.reading_words_per_minute
-                reading_delay_ms = int(words * seconds_per_word * 1000)
+
+                # Split response into chunks
+                if use_chunks:
+                    response_chunks = human_like_chunks(response_text)
+                else:
+                    response_chunks = [response_text]
+
+                # Calculate delays using new system
+                delay_data = calculate_typing_delays(
+                    message, response_chunks, bot)
 
                 delay_config = {
-                    "typing_speed_min_ms": bot.typing_speed_min_ms,
-                    "typing_speed_max_ms": bot.typing_speed_max_ms,
-                    "question_thinking_ms": bot.question_thinking_ms,
-                    "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
-                    "last_chunk_pause_ms": bot.last_chunk_pause_ms,
-                    "min_delay_ms": bot.min_delay_ms,
-                    "max_delay_ms": bot.max_delay_ms,
-                    "reading_delay_ms": reading_delay_ms,
+                    "reading_time": delay_data['reading_time'],
+                    "min_reading_delay": delay_data['min_reading_delay'],
+                    "response_segments": delay_data['response_segments']
                 }
+
             except Bot.DoesNotExist:
                 # Use defaults if bot not found
                 use_chunks = True
                 use_humanlike_delay = True
-                # Calculate reading delay with default WPM
-                words = len(message.split())
-                seconds_per_word = 60 / 250  # Default 250 WPM
-                reading_delay_ms = int(words * seconds_per_word * 1000)
+
+                # Create default bot configuration for calculation
+                class DefaultBotConfiguration:
+                    humanlike_delay = True
+                    reading_words_per_minute = 250.0
+                    reading_jitter_min = 0.1
+                    reading_jitter_max = 0.3
+                    reading_thinking_min = 0.2
+                    reading_thinking_max = 0.5
+                    writing_words_per_minute = 200.0
+                    writing_jitter_min = 0.05
+                    writing_jitter_max = 0.15
+                    writing_thinking_min = 0.1
+                    writing_thinking_max = 0.3
+                    intra_message_delay_min = 0.1
+                    intra_message_delay_max = 0.3
+                    min_reading_delay = 1.0
+
+                default_bot = DefaultBotConfiguration()
+
+                # Split response into chunks
+                if use_chunks:
+                    response_chunks = human_like_chunks(response_text)
+                else:
+                    response_chunks = [response_text]
+
+                # Calculate delays using new system
+                delay_data = calculate_typing_delays(
+                    message, response_chunks, default_bot)
 
                 delay_config = {
-                    "typing_speed_min_ms": 100,
-                    "typing_speed_max_ms": 200,
-                    "question_thinking_ms": 300,
-                    "first_chunk_thinking_ms": 600,
-                    "last_chunk_pause_ms": 100,
-                    "min_delay_ms": 200,
-                    "max_delay_ms": 800,
-                    "reading_delay_ms": reading_delay_ms,
+                    "reading_time": delay_data['reading_time'],
+                    "min_reading_delay": delay_data['min_reading_delay'],
+                    "response_segments": delay_data['response_segments']
                 }
-
-            # split or not
-            if use_chunks:
-                response_chunks = human_like_chunks(response_text)
-            else:
-                response_chunks = [response_text]
 
             return JsonResponse(
                 {
                     "message": message,
                     "response": response_text,
-                    "response_chunks": response_chunks,
+                    "response_chunks": response_chunks,  # Keep for backward compatibility
                     "bot_name": bot_name,
                     "humanlike_delay": use_humanlike_delay,
+                    "chunk_messages": use_chunks,
                     "delay_config": delay_config,
                 },
                 status=200,

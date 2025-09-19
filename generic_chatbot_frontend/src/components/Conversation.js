@@ -174,8 +174,20 @@ const Conversation = () => {
             //   `📝 Follow-up response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}`,
             //   delayConfig
             // );
-            setIsTyping(true);
-            revealChunks(chunks, 0, useHumanlikeDelay, delayConfig);
+
+            // Handle new delay system for followup
+            if (delayConfig && delayConfig.response_segments) {
+              // New delay system
+              executeTypingSequence(
+                delayConfig.response_segments,
+                delayConfig,
+                0
+              );
+            } else {
+              // Legacy delay system (backward compatibility)
+              setIsTyping(true);
+              revealChunks(chunks, 0, useHumanlikeDelay, delayConfig);
+            }
           } else {
             // const error = await res.json();
             // console.warn('Follow-up request failed:', error.error);
@@ -319,6 +331,58 @@ const Conversation = () => {
     });
   };
 
+  // Execute typing sequence with realistic delays
+  const executeTypingSequence = (
+    responseSegments,
+    delayConfig,
+    backendTimeMs
+  ) => {
+    const { reading_time, min_reading_delay } = delayConfig;
+
+    // Calculate actual reading time (frontend handles backend latency)
+    const backendLatencySeconds = backendTimeMs / 1000;
+    const effectiveReadingTime = Math.min(
+      min_reading_delay,
+      reading_time - backendLatencySeconds
+    );
+
+    // Start reading delay
+    setTimeout(() => {
+      displayResponseSegments(responseSegments);
+    }, effectiveReadingTime * 1000);
+  };
+
+  // Display response segments with realistic typing delays
+  const displayResponseSegments = responseSegments => {
+    let cumulativeDelay = 0;
+
+    responseSegments.forEach((segment, index) => {
+      const { content, writing_delay, inter_segment_delay } = segment;
+
+      // Show typing indicator
+      setTimeout(() => {
+        setIsTyping(true);
+      }, cumulativeDelay * 1000);
+
+      // Hide typing indicator and show message
+      setTimeout(
+        () => {
+          setIsTyping(false);
+          setMessages(prev => [
+            ...prev,
+            {
+              sender: 'AI Chatbot',
+              content: content,
+            },
+          ]);
+        },
+        (cumulativeDelay + writing_delay) * 1000
+      );
+
+      cumulativeDelay += writing_delay + inter_segment_delay;
+    });
+  };
+
   // Handle user send
   const handleSubmit = async e => {
     e.preventDefault();
@@ -379,21 +443,32 @@ const Conversation = () => {
 
       const chunks = data.response_chunks || [data.response];
       const useHumanlikeDelay = data.humanlike_delay !== false; // Default to true if not specified
+      const chunkMessages = data.chunk_messages !== false; // Default to true if not specified
       const delayConfig = data.delay_config || null;
-      const readingDelayMs = delayConfig?.reading_delay_ms || 0;
 
       // console.log(
-      //   `📝 Response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}, reading delay: ${readingDelayMs}ms`,
+      //   `📝 Response has ${chunks.length} chunks, humanlike delay: ${useHumanlikeDelay}, chunk messages: ${chunkMessages}`,
       //   delayConfig
       // );
 
-      // Delay typing indicator appearance by reading delay
-      setTimeout(() => {
-        if (useHumanlikeDelay) {
-          setIsTyping(true);
-        }
-        revealChunks(chunks, backendTimeMs, useHumanlikeDelay, delayConfig);
-      }, readingDelayMs);
+      // Handle new delay system
+      if (delayConfig && delayConfig.response_segments) {
+        // New delay system
+        executeTypingSequence(
+          delayConfig.response_segments,
+          delayConfig,
+          backendTimeMs
+        );
+      } else {
+        // Legacy delay system (backward compatibility)
+        const readingDelayMs = delayConfig?.reading_delay_ms || 0;
+        setTimeout(() => {
+          if (useHumanlikeDelay) {
+            setIsTyping(true);
+          }
+          revealChunks(chunks, backendTimeMs, useHumanlikeDelay, delayConfig);
+        }, readingDelayMs);
+      }
     } catch (err) {
       // console.error('Error sending message:', err);
       alert('An error occurred. Please try again.');

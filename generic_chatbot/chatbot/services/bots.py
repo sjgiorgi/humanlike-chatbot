@@ -32,13 +32,27 @@ class ListBotsAPIView(View):
                 "avatar_type",
                 "chunk_messages",
                 "humanlike_delay",
-                "typing_speed_min_ms",
-                "typing_speed_max_ms",
-                "question_thinking_ms",
-                "first_chunk_thinking_ms",
-                "last_chunk_pause_ms",
-                "min_delay_ms",
-                "max_delay_ms",
+                "reading_words_per_minute",
+                "reading_jitter_min",
+                "reading_jitter_max",
+                "reading_thinking_min",
+                "reading_thinking_max",
+                "writing_words_per_minute",
+                "writing_jitter_min",
+                "writing_jitter_max",
+                "writing_thinking_min",
+                "writing_thinking_max",
+                "intra_message_delay_min",
+                "intra_message_delay_max",
+                "min_reading_delay",
+                # OLD: Legacy fields (commented out)
+                # "typing_speed_min_ms",
+                # "typing_speed_max_ms",
+                # "question_thinking_ms",
+                # "first_chunk_thinking_ms",
+                # "last_chunk_pause_ms",
+                # "min_delay_ms",
+                # "max_delay_ms",
                 "follow_up_on_idle",
                 "idle_time_minutes",
                 "follow_up_instruction_prompt",
@@ -110,13 +124,27 @@ class BotDetailAPIView(View):
                 "avatar_type": bot.avatar_type,
                 "chunk_messages": bot.chunk_messages,
                 "humanlike_delay": bot.humanlike_delay,
-                "typing_speed_min_ms": bot.typing_speed_min_ms,
-                "typing_speed_max_ms": bot.typing_speed_max_ms,
-                "question_thinking_ms": bot.question_thinking_ms,
-                "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
-                "last_chunk_pause_ms": bot.last_chunk_pause_ms,
-                "min_delay_ms": bot.min_delay_ms,
-                "max_delay_ms": bot.max_delay_ms,
+                "reading_words_per_minute": bot.reading_words_per_minute,
+                "reading_jitter_min": bot.reading_jitter_min,
+                "reading_jitter_max": bot.reading_jitter_max,
+                "reading_thinking_min": bot.reading_thinking_min,
+                "reading_thinking_max": bot.reading_thinking_max,
+                "writing_words_per_minute": bot.writing_words_per_minute,
+                "writing_jitter_min": bot.writing_jitter_min,
+                "writing_jitter_max": bot.writing_jitter_max,
+                "writing_thinking_min": bot.writing_thinking_min,
+                "writing_thinking_max": bot.writing_thinking_max,
+                "intra_message_delay_min": bot.intra_message_delay_min,
+                "intra_message_delay_max": bot.intra_message_delay_max,
+                "min_reading_delay": bot.min_reading_delay,
+                # OLD: Legacy fields (commented out)
+                # "typing_speed_min_ms": bot.typing_speed_min_ms,
+                # "typing_speed_max_ms": bot.typing_speed_max_ms,
+                # "question_thinking_ms": bot.question_thinking_ms,
+                # "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
+                # "last_chunk_pause_ms": bot.last_chunk_pause_ms,
+                # "min_delay_ms": bot.min_delay_ms,
+                # "max_delay_ms": bot.max_delay_ms,
                 "follow_up_on_idle": bot.follow_up_on_idle,
                 "idle_time_minutes": bot.idle_time_minutes,
                 "follow_up_instruction_prompt": bot.follow_up_instruction_prompt,
@@ -140,34 +168,65 @@ class BotDetailAPIView(View):
             bot.model_type = data.get("model_type", bot.model_type)
             bot.model_id = data.get("model_id", bot.model_id)
             bot.prompt = data.get("prompt", bot.prompt)
-            bot.initial_utterance = data.get("initial_utterance", bot.initial_utterance)
+            bot.initial_utterance = data.get(
+                "initial_utterance", bot.initial_utterance)
             bot.avatar_type = data.get("avatar_type", bot.avatar_type)
             bot.chunk_messages = data.get("chunk_messages", bot.chunk_messages)
-            bot.humanlike_delay = data.get("humanlike_delay", bot.humanlike_delay)
-            bot.typing_speed_min_ms = data.get(
-                "typing_speed_min_ms",
-                bot.typing_speed_min_ms,
-            )
-            bot.typing_speed_max_ms = data.get(
-                "typing_speed_max_ms",
-                bot.typing_speed_max_ms,
-            )
-            bot.question_thinking_ms = data.get(
-                "question_thinking_ms",
-                bot.question_thinking_ms,
-            )
-            bot.first_chunk_thinking_ms = data.get(
-                "first_chunk_thinking_ms",
-                bot.first_chunk_thinking_ms,
-            )
-            bot.last_chunk_pause_ms = data.get(
-                "last_chunk_pause_ms",
-                bot.last_chunk_pause_ms,
-            )
-            bot.min_delay_ms = data.get("min_delay_ms", bot.min_delay_ms)
-            bot.max_delay_ms = data.get("max_delay_ms", bot.max_delay_ms)
-            bot.follow_up_on_idle = data.get("follow_up_on_idle", bot.follow_up_on_idle)
-            bot.idle_time_minutes = data.get("idle_time_minutes", bot.idle_time_minutes)
+            bot.humanlike_delay = data.get(
+                "humanlike_delay", bot.humanlike_delay)
+            bot.reading_words_per_minute = data.get(
+                "reading_words_per_minute", bot.reading_words_per_minute)
+            bot.reading_jitter_min = data.get(
+                "reading_jitter_min", bot.reading_jitter_min)
+            bot.reading_jitter_max = data.get(
+                "reading_jitter_max", bot.reading_jitter_max)
+            bot.reading_thinking_min = data.get(
+                "reading_thinking_min", bot.reading_thinking_min)
+            bot.reading_thinking_max = data.get(
+                "reading_thinking_max", bot.reading_thinking_max)
+            bot.writing_words_per_minute = data.get(
+                "writing_words_per_minute", bot.writing_words_per_minute)
+            bot.writing_jitter_min = data.get(
+                "writing_jitter_min", bot.writing_jitter_min)
+            bot.writing_jitter_max = data.get(
+                "writing_jitter_max", bot.writing_jitter_max)
+            bot.writing_thinking_min = data.get(
+                "writing_thinking_min", bot.writing_thinking_min)
+            bot.writing_thinking_max = data.get(
+                "writing_thinking_max", bot.writing_thinking_max)
+            bot.intra_message_delay_min = data.get(
+                "intra_message_delay_min", bot.intra_message_delay_min)
+            bot.intra_message_delay_max = data.get(
+                "intra_message_delay_max", bot.intra_message_delay_max)
+            bot.min_reading_delay = data.get(
+                "min_reading_delay", bot.min_reading_delay)
+            # OLD: Legacy fields (commented out)
+            # bot.typing_speed_min_ms = data.get(
+            #     "typing_speed_min_ms",
+            #     bot.typing_speed_min_ms,
+            # )
+            # bot.typing_speed_max_ms = data.get(
+            #     "typing_speed_max_ms",
+            #     bot.typing_speed_max_ms,
+            # )
+            # bot.question_thinking_ms = data.get(
+            #     "question_thinking_ms",
+            #     bot.question_thinking_ms,
+            # )
+            # bot.first_chunk_thinking_ms = data.get(
+            #     "first_chunk_thinking_ms",
+            #     bot.first_chunk_thinking_ms,
+            # )
+            # bot.last_chunk_pause_ms = data.get(
+            #     "last_chunk_pause_ms",
+            #     bot.last_chunk_pause_ms,
+            # )
+            # bot.min_delay_ms = data.get("min_delay_ms", bot.min_delay_ms)
+            # bot.max_delay_ms = data.get("max_delay_ms", bot.max_delay_ms)
+            bot.follow_up_on_idle = data.get(
+                "follow_up_on_idle", bot.follow_up_on_idle)
+            bot.idle_time_minutes = data.get(
+                "idle_time_minutes", bot.idle_time_minutes)
             bot.follow_up_instruction_prompt = data.get(
                 "follow_up_instruction_prompt",
                 bot.follow_up_instruction_prompt,
