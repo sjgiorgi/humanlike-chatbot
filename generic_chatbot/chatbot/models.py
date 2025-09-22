@@ -343,39 +343,94 @@ class Bot(models.Model):
         help_text="If true, apply human-like typing delays; if false, show messages instantly",
     )
 
-    # Humanlike delay configuration (bot-specific)
-    typing_speed_min_ms = models.IntegerField(
-        default=100,
-        help_text="Minimum milliseconds per character for typing speed (base delay)",
-    )
-    typing_speed_max_ms = models.IntegerField(
-        default=200,
-        help_text="Maximum milliseconds per character for typing speed (base delay)",
-    )
-    question_thinking_ms = models.IntegerField(
-        default=300,
-        help_text="Additional milliseconds for chunks containing questions",
-    )
-    first_chunk_thinking_ms = models.IntegerField(
-        default=600,
-        help_text="Additional milliseconds for the first chunk (thinking time)",
-    )
-    last_chunk_pause_ms = models.IntegerField(
-        default=100,
-        help_text="Additional milliseconds for the last chunk",
-    )
-    min_delay_ms = models.IntegerField(
-        default=200,
-        help_text="Minimum delay in milliseconds (when backend is fast)",
-    )
-    max_delay_ms = models.IntegerField(
-        default=800,
-        help_text="Maximum delay in milliseconds (when backend is slow)",
-    )
-    reading_words_per_minute = models.IntegerField(
-        default=250,
+    # NEW: Humanlike delay configuration (bot-specific) - all in seconds
+    # Reading parameters
+    reading_words_per_minute = models.FloatField(
+        default=250.0,
         help_text="Words per minute reading speed for calculating reading delay",
     )
+    reading_jitter_min = models.FloatField(
+        default=0.1,
+        help_text="Minimum reading jitter in seconds",
+    )
+    reading_jitter_max = models.FloatField(
+        default=0.3,
+        help_text="Maximum reading jitter in seconds",
+    )
+    reading_thinking_min = models.FloatField(
+        default=0.2,
+        help_text="Minimum reading thinking time in seconds",
+    )
+    reading_thinking_max = models.FloatField(
+        default=0.5,
+        help_text="Maximum reading thinking time in seconds",
+    )
+    
+    # Writing parameters
+    writing_words_per_minute = models.FloatField(
+        default=200.0,
+        help_text="Words per minute writing speed for calculating writing delay",
+    )
+    writing_jitter_min = models.FloatField(
+        default=0.05,
+        help_text="Minimum writing jitter in seconds",
+    )
+    writing_jitter_max = models.FloatField(
+        default=0.15,
+        help_text="Maximum writing jitter in seconds",
+    )
+    writing_thinking_min = models.FloatField(
+        default=0.1,
+        help_text="Minimum writing thinking time in seconds",
+    )
+    writing_thinking_max = models.FloatField(
+        default=0.3,
+        help_text="Maximum writing thinking time in seconds",
+    )
+    
+    # Intra-message delays
+    intra_message_delay_min = models.FloatField(
+        default=0.1,
+        help_text="Minimum delay between message parts in seconds",
+    )
+    intra_message_delay_max = models.FloatField(
+        default=0.3,
+        help_text="Maximum delay between message parts in seconds",
+    )
+    min_reading_delay = models.FloatField(
+        default=1.0,
+        help_text="Minimum reading delay in seconds",
+    )
+
+    # OLD: Legacy delay configuration (commented out for backward compatibility)
+    # typing_speed_min_ms = models.IntegerField(
+    #     default=100,
+    #     help_text="Minimum milliseconds per character for typing speed (base delay)",
+    # )
+    # typing_speed_max_ms = models.IntegerField(
+    #     default=200,
+    #     help_text="Maximum milliseconds per character for typing speed (base delay)",
+    # )
+    # question_thinking_ms = models.IntegerField(
+    #     default=300,
+    #     help_text="Additional milliseconds for chunks containing questions",
+    # )
+    # first_chunk_thinking_ms = models.IntegerField(
+    #     default=600,
+    #     help_text="Additional milliseconds for the first chunk (thinking time)",
+    # )
+    # last_chunk_pause_ms = models.IntegerField(
+    #     default=100,
+    #     help_text="Additional milliseconds for the last chunk",
+    # )
+    # min_delay_ms = models.IntegerField(
+    #     default=200,
+    #     help_text="Minimum delay in milliseconds (when backend is fast)",
+    # )
+    # max_delay_ms = models.IntegerField(
+    #     default=800,
+    #     help_text="Maximum delay in milliseconds (when backend is slow)",
+    # )
 
     # Follow-up on idle settings
     follow_up_on_idle = models.BooleanField(

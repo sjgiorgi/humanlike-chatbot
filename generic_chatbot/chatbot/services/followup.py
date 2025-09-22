@@ -90,7 +90,8 @@ async def run_followup_chat_round(
             # Build conversation history from database
             for utterance in utterances:
                 role = "user" if utterance.speaker_id == "user" else "assistant"
-                conversation_history.append({"role": role, "content": utterance.text})
+                conversation_history.append(
+                    {"role": role, "content": utterance.text})
 
             # Populate cache
             cache.set(cache_key, conversation_history, timeout=3600)
@@ -98,13 +99,14 @@ async def run_followup_chat_round(
                 f"Loaded {len(conversation_history)} messages from database for conversation {conversation_id}",
             )
         except Exception as e:
-            logger.warning(f"Failed to load conversation history from database: {e}")
+            logger.warning(
+                f"Failed to load conversation history from database: {e}")
             conversation_history = []
 
     # Apply transcript length limit to history only (before adding followup instruction)
     if bot.max_transcript_length > 0:
         # Keep only the latest messages from history up to the limit
-        conversation_history = conversation_history[-bot.max_transcript_length :]
+        conversation_history = conversation_history[-bot.max_transcript_length:]
         logger.info(
             f"Limited history to {len(conversation_history)} messages (max: {bot.max_transcript_length})",
         )
@@ -118,7 +120,8 @@ async def run_followup_chat_round(
         )
 
     # Add followup instruction to history for AI processing (but don't save to DB)
-    conversation_history.append({"role": "user", "content": followup_instruction})
+    conversation_history.append(
+        {"role": "user", "content": followup_instruction})
 
     # Format for Kani
     formatted_history = [
@@ -146,7 +149,8 @@ async def run_followup_chat_round(
         bot.model_id,
         followup_engine_instances,
     )
-    kani = Kani(engine, system_prompt=system_prompt, chat_history=formatted_history)
+    kani = Kani(engine, system_prompt=system_prompt,
+                chat_history=formatted_history)
 
     latest_user_message = formatted_history[-1].content
     response_text = ""
@@ -162,7 +166,8 @@ async def run_followup_chat_round(
     chat_history_json = json.dumps(conversation_history[:-1], indent=2)
 
     # Update cache with the followup instruction and response (for future context)
-    conversation_history.append({"role": "assistant", "content": response_text})
+    conversation_history.append(
+        {"role": "assistant", "content": response_text})
     cache.set(cache_key, conversation_history, timeout=3600)
 
     # Only save the bot's response to database, NOT the followup request
@@ -323,55 +328,78 @@ class FollowupAPIView(View):
                 bot = await sync_to_async(Bot.objects.get)(name=bot_name)
                 use_chunks = bot.chunk_messages
                 use_humanlike_delay = bot.humanlike_delay
-                # For followup messages, use a default reading delay (equivalent to 10 words)
-                default_words = 10
-                seconds_per_word = 60 / bot.reading_words_per_minute
-                reading_delay_ms = int(default_words * seconds_per_word * 1000)
+
+                # Split response into chunks
+                if use_chunks:
+                    from .post_processing import human_like_chunks, calculate_typing_delays
+                    response_chunks = human_like_chunks(response_text)
+                else:
+                    response_chunks = [response_text]
+
+                # For followup messages, use empty message for reading delay calculation
+                simulated_user_message = ""
+
+                # Calculate delays using new system
+                delay_data = calculate_typing_delays(
+                    simulated_user_message, response_chunks, bot)
 
                 delay_config = {
-                    "typing_speed_min_ms": bot.typing_speed_min_ms,
-                    "typing_speed_max_ms": bot.typing_speed_max_ms,
-                    "question_thinking_ms": bot.question_thinking_ms,
-                    "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
-                    "last_chunk_pause_ms": bot.last_chunk_pause_ms,
-                    "min_delay_ms": bot.min_delay_ms,
-                    "max_delay_ms": bot.max_delay_ms,
-                    "reading_delay_ms": reading_delay_ms,
+                    "reading_time": delay_data['reading_time'],
+                    "min_reading_delay": delay_data['min_reading_delay'],
+                    "response_segments": delay_data['response_segments']
                 }
+
             except Bot.DoesNotExist:
                 use_chunks = True  # Default to chunking
                 use_humanlike_delay = True  # Default to delay
-                # For followup messages, use a default reading delay (equivalent to 10 words)
-                default_words = 10
-                seconds_per_word = 60 / 250  # Default 250 WPM
-                reading_delay_ms = int(default_words * seconds_per_word * 1000)
+
+                # Create default bot configuration for calculation
+                class DefaultBotConfiguration:
+                    humanlike_delay = True
+                    reading_words_per_minute = 250.0
+                    reading_jitter_min = 0.1
+                    reading_jitter_max = 0.3
+                    reading_thinking_min = 0.2
+                    reading_thinking_max = 0.5
+                    writing_words_per_minute = 200.0
+                    writing_jitter_min = 0.05
+                    writing_jitter_max = 0.15
+                    writing_thinking_min = 0.1
+                    writing_thinking_max = 0.3
+                    intra_message_delay_min = 0.1
+                    intra_message_delay_max = 0.3
+                    min_reading_delay = 1.0
+
+                default_bot = DefaultBotConfiguration()
+
+                # Split response into chunks
+                if use_chunks:
+                    from .post_processing import human_like_chunks, calculate_typing_delays
+                    response_chunks = human_like_chunks(response_text)
+                else:
+                    response_chunks = [response_text]
+
+                # For followup messages, simulate a 10-word user message for reading delay calculation
+                simulated_user_message = "How are you doing today? I hope you're having a great time!"
+
+                # Calculate delays using new system
+                delay_data = calculate_typing_delays(
+                    simulated_user_message, response_chunks, default_bot)
 
                 delay_config = {
-                    "typing_speed_min_ms": 100,
-                    "typing_speed_max_ms": 200,
-                    "question_thinking_ms": 300,
-                    "first_chunk_thinking_ms": 600,
-                    "last_chunk_pause_ms": 100,
-                    "min_delay_ms": 200,
-                    "max_delay_ms": 800,
-                    "reading_delay_ms": reading_delay_ms,
+                    "reading_time": delay_data['reading_time'],
+                    "min_reading_delay": delay_data['min_reading_delay'],
+                    "response_segments": delay_data['response_segments']
                 }
-
-            # Apply chunking if enabled
-            if use_chunks:
-                from .post_processing import human_like_chunks
-
-                response_chunks = human_like_chunks(response_text)
-            else:
-                response_chunks = [response_text]
 
             return JsonResponse(
                 {
                     "response": response_text,
-                    "response_chunks": response_chunks,
+                    "response_chunks": response_chunks,  # Keep for backward compatibility
                     "bot_name": bot_name,
                     "is_followup": True,
                     "humanlike_delay": use_humanlike_delay,
+                    "chunk_messages": use_chunks,
                     "delay_config": delay_config,
                 },
                 status=200,
