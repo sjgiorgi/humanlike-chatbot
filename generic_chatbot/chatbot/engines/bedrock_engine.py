@@ -10,29 +10,35 @@ from typing import List, Dict, Any, Optional
 import boto3
 from botocore.exceptions import ClientError
 
-from kani.engines.base import BaseEngine
-from kani.models import ChatMessage, ChatRole, AIFunction
+from kani.engines.base import BaseEngine, BaseCompletion
+from kani.models import ChatMessage, ChatRole
 from kani.prompts.pipeline import PromptPipeline
 
 
-class BedrockCompletion:
+class BedrockCompletion(BaseCompletion):
     """Completion wrapper for Bedrock responses."""
-    
-    def __init__(self, message: ChatMessage):
+
+    def __init__(self, message: ChatMessage, prompt_tokens: Optional[int] = None, completion_tokens: Optional[int] = None):
         self._message = message
-    
+        self._prompt_tokens = prompt_tokens
+        self._completion_tokens = completion_tokens
+
     @property
     def message(self) -> ChatMessage:
         return self._message
-    
+
     @property
-    def usage(self) -> Optional[Dict[str, int]]:
-        return None
+    def prompt_tokens(self) -> Optional[int]:
+        return self._prompt_tokens
+
+    @property
+    def completion_tokens(self) -> Optional[int]:
+        return self._completion_tokens
 
 
 class BedrockEngine(BaseEngine):
     """Amazon Bedrock engine for Kani framework."""
-    
+
     def __init__(
         self,
         model_id: str,
@@ -45,29 +51,31 @@ class BedrockEngine(BaseEngine):
         **kwargs
     ):
         super().__init__(**kwargs)
-        
+
         self.model_id = model_id
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.top_p = top_p
-        
+
         # Initialize Bedrock client
         self.client = boto3.client(
             "bedrock-runtime",
-            aws_access_key_id=aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY"),
+            aws_access_key_id=aws_access_key_id or os.getenv(
+                "AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=aws_secret_access_key or os.getenv(
+                "AWS_SECRET_ACCESS_KEY"),
             region_name=region_name
         )
-        
+
         # Set context size based on model
         self.max_context_size = self._get_model_context_size(model_id)
-        
+
         # Thread pool for running sync Bedrock calls
         self._executor = ThreadPoolExecutor(max_workers=1)
-        
+
         # Create prompt pipeline
         self.pipeline = self._create_pipeline()
-    
+
     def _get_model_context_size(self, model_id: str) -> int:
         """Get context size for the model."""
         context_sizes = {
@@ -77,7 +85,7 @@ class BedrockEngine(BaseEngine):
             "anthropic.claude-3-haiku-20240307-v1:0": 200000,
         }
         return context_sizes.get(model_id, 8192)
-    
+
     def _create_pipeline(self) -> PromptPipeline:
         """Create the prompt pipeline for Bedrock message conversion."""
         return (
@@ -95,7 +103,7 @@ class BedrockEngine(BaseEngine):
             # Ensure conversation ends with user message (Bedrock requirement)
             .macro_apply(self._ensure_ends_with_user)
         )
-    
+
     def _transform_content(self, message: ChatMessage) -> List[Dict[str, str]]:
         """Transform message content to Bedrock format."""
         if isinstance(message.content, str):
@@ -104,30 +112,32 @@ class BedrockEngine(BaseEngine):
             return message.content
         else:
             return [{"text": str(message.content)}]
-    
-    def _ensure_ends_with_user(self, messages: List[Dict], functions: List[AIFunction]) -> List[Dict]:
+
+    def _ensure_ends_with_user(self, messages: List[Dict], functions: List) -> List[Dict]:
         """Ensure the conversation ends with a user message (Bedrock requirement)."""
         if not messages or messages[-1]["role"] != "user":
-            messages.append({"role": "user", "content": [{"text": "Continue"}]})
+            messages.append(
+                {"role": "user", "content": [{"text": "Continue"}]})
         return messages
-    
+
     def message_len(self, message: ChatMessage) -> int:
         """Estimate message length in tokens."""
         if isinstance(message.content, str):
-            return len(message.content) // 4  # Rough estimation: 1 token ≈ 4 chars
+            # Rough estimation: 1 token ≈ 4 chars
+            return len(message.content) // 4
         return 50  # Default for complex content
-    
+
     async def predict(
         self,
         messages: List[ChatMessage],
-        functions: Optional[List[AIFunction]] = None,
+        functions: Optional[List] = None,
         **kwargs
     ) -> BedrockCompletion:
         """Generate a response from Bedrock."""
         try:
             # Convert messages using pipeline
             conversation = self.pipeline(messages, functions or [])
-            
+
             # Call Bedrock in thread pool to avoid blocking
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
@@ -135,18 +145,48 @@ class BedrockEngine(BaseEngine):
                 self._call_bedrock,
                 conversation
             )
-            
+
             # Extract response text
             response_text = response["output"]["message"]["content"][0]["text"]
-            
+
             # Create response message
-            response_message = ChatMessage(role=ChatRole.ASSISTANT, content=response_text)
-            
+            response_message = ChatMessage(
+                role=ChatRole.ASSISTANT, content=response_text)
+
             return BedrockCompletion(response_message)
-            
+
         except Exception as e:
             raise RuntimeError(f"Bedrock API call failed: {e}")
-    
+
+    async def stream(
+        self,
+        messages: List[ChatMessage],
+        functions: Optional[List] = None,
+        **kwargs
+    ):
+        """Stream a response from Bedrock."""
+        try:
+            # Convert messages using pipeline
+            conversation = self.pipeline(messages, functions or [])
+
+            # Call Bedrock in thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                self._executor,
+                self._call_bedrock_stream,
+                conversation
+            )
+
+            # Process the streaming response
+            for event in response['stream']:
+                if 'contentBlockDelta' in event:
+                    # Extract text chunk from the delta
+                    text_chunk = event['contentBlockDelta']['delta']['text']
+                    yield text_chunk
+
+        except Exception as e:
+            raise RuntimeError(f"Bedrock streaming API call failed: {e}")
+
     def _call_bedrock(self, conversation: List[Dict]) -> Dict[str, Any]:
         """Make the actual Bedrock API call."""
         try:
@@ -162,12 +202,28 @@ class BedrockEngine(BaseEngine):
             return response
         except ClientError as e:
             raise RuntimeError(f"Bedrock API call failed: {e}")
-    
+
+    def _call_bedrock_stream(self, conversation: List[Dict]) -> Dict[str, Any]:
+        """Make the actual Bedrock streaming API call."""
+        try:
+            response = self.client.converse_stream(
+                modelId=self.model_id,
+                messages=conversation,
+                inferenceConfig={
+                    "maxTokens": self.max_tokens,
+                    "temperature": self.temperature,
+                    "topP": self.top_p,
+                }
+            )
+            return response
+        except ClientError as e:
+            raise RuntimeError(f"Bedrock streaming API call failed: {e}")
+
     async def close(self):
         """Close the engine and cleanup resources."""
         if hasattr(self, '_executor'):
             self._executor.shutdown(wait=True)
-    
+
     def explain_pipeline(self):
         """Print an explanation of the configured prompt pipeline."""
         print("BedrockEngine Prompt Pipeline:")
