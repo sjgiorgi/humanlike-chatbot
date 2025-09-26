@@ -81,6 +81,13 @@ class BedrockEngine(BaseEngine):
         context_sizes = {
             "meta.llama3-8b-instruct-v1:0": 8192,
             "meta.llama3-70b-instruct-v1:0": 8192,
+            "meta.llama3.1-8b-instruct-v1:0": 8192,
+            "meta.llama3.1-70b-instruct-v1:0": 8192,
+            "meta.llama3.2-1b-instruct-v1:0": 8192,
+            "meta.llama3.2-3b-instruct-v1:0": 8192,
+            "meta.llama3.2-11b-instruct-v1:0": 8192,
+            "meta.llama3.2-90b-instruct-v1:0": 8192,
+            "meta.llama3.3-70b-instruct-v1:0": 8192,
             "anthropic.claude-3-sonnet-20240229-v1:0": 200000,
             "anthropic.claude-3-haiku-20240307-v1:0": 200000,
         }
