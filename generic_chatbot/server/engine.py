@@ -4,6 +4,8 @@ import os
 from kani.engines.anthropic import AnthropicEngine
 from kani.engines.openai import OpenAIEngine
 
+from chatbot.engines.bedrock_engine import BedrockEngine
+
 # Get logger for this module
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,18 @@ def initialize_engine(model_type, model_id, csv_name=""):
             raise ValueError("Missing ANTHROPIC_API_KEY.")
         return AnthropicEngine(api_key=api_key, model=model_id)
 
+    if model_type == "Bedrock":
+        aws_key = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY")
+        if not aws_key or not aws_secret:
+            raise ValueError("Missing AWS credentials.")
+        return BedrockEngine(
+            model_id=model_id,
+            aws_access_key_id=aws_key,
+            aws_secret_access_key=aws_secret,
+            region_name=os.getenv("AWS_REGION", "us-east-1"),
+        )
+
     raise ValueError(f"Unsupported model type: {model_type}")
 
 
@@ -39,6 +53,18 @@ def initialize_engine_from_model(model):
             raise ValueError("Missing ANTHROPIC_API_KEY.")
         return AnthropicEngine(api_key=api_key, model=model.model_id)
 
+    if model.provider.name == "Bedrock":
+        aws_key = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY")
+        if not aws_key or not aws_secret:
+            raise ValueError("Missing AWS credentials.")
+        return BedrockEngine(
+            model_id=model.model_id,
+            aws_access_key_id=aws_key,
+            aws_secret_access_key=aws_secret,
+            region_name=os.getenv("AWS_REGION", "us-east-1"),
+        )
+
     raise ValueError(f"Unsupported model provider: {model.provider.name}")
 
 
@@ -50,7 +76,8 @@ def get_or_create_engine(model_type, model_id, engine_instances):
     engine_key = (model_type, model_id)
 
     if engine_key not in engine_instances:
-        logger.info(f"Initializing Engine: Type={model_type}, Model={model_id}")
+        logger.info(
+            f"Initializing Engine: Type={model_type}, Model={model_id}")
         engine_instances[engine_key] = initialize_engine(model_type, model_id)
 
     return engine_instances[engine_key]

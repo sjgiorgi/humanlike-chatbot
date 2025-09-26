@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
 import random
+from typing import Any, Dict, List
 
 import nltk
 from nltk.tokenize import sent_tokenize
@@ -39,7 +39,7 @@ def human_like_chunks(text: str) -> List[str]:
 def calculate_typing_delays(
     user_message: str,
     response_segments: List[str],
-    bot_config: Any
+    bot_config: Any,
 ) -> Dict[str, Any]:
     """
     Calculate realistic typing delays with separate reading and writing phases.
@@ -79,19 +79,19 @@ def calculate_typing_delays(
 
         inter_segment_delay = random.uniform(
             bot_config.intra_message_delay_min,
-            bot_config.intra_message_delay_max
+            bot_config.intra_message_delay_max,
         )
 
         response_segments_with_delays.append({
-            'content': segment,
-            'writing_delay': writing_delay,
-            'inter_segment_delay': inter_segment_delay
+            "content": segment,
+            "writing_delay": writing_delay,
+            "inter_segment_delay": inter_segment_delay,
         })
 
     return {
-        'reading_time': reading_time,
-        'min_reading_delay': bot_config.min_reading_delay,
-        'response_segments': response_segments_with_delays
+        "reading_time": reading_time,
+        "min_reading_delay": bot_config.min_reading_delay,
+        "response_segments": response_segments_with_delays,
     }
 
 
@@ -106,14 +106,14 @@ def create_instant_display_response(response_segments: List[str]) -> Dict[str, A
         Dictionary with zero delays for instant display
     """
     return {
-        'reading_time': 0.0,
-        'min_reading_delay': 0.0,
-        'response_segments': [
+        "reading_time": 0.0,
+        "min_reading_delay": 0.0,
+        "response_segments": [
             {
-                'content': segment,
-                'writing_delay': 0.0,
-                'inter_segment_delay': 0.0
+                "content": segment,
+                "writing_delay": 0.0,
+                "inter_segment_delay": 0.0,
             }
             for segment in response_segments
-        ]
+        ],
     }
