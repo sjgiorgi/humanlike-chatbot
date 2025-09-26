@@ -8,7 +8,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Bot
-from .services.post_processing import human_like_chunks, calculate_typing_delays
+from .services.post_processing import calculate_typing_delays, human_like_chunks
 from .services.runchat import run_chat_round
 
 # Get logger for this module
@@ -99,9 +99,9 @@ class ChatbotAPIView(View):
                     message, response_chunks, bot)
 
                 delay_config = {
-                    "reading_time": delay_data['reading_time'],
-                    "min_reading_delay": delay_data['min_reading_delay'],
-                    "response_segments": delay_data['response_segments']
+                    "reading_time": delay_data["reading_time"],
+                    "min_reading_delay": delay_data["min_reading_delay"],
+                    "response_segments": delay_data["response_segments"],
                 }
 
             except Bot.DoesNotExist:
@@ -139,9 +139,9 @@ class ChatbotAPIView(View):
                     message, response_chunks, default_bot)
 
                 delay_config = {
-                    "reading_time": delay_data['reading_time'],
-                    "min_reading_delay": delay_data['min_reading_delay'],
-                    "response_segments": delay_data['response_segments']
+                    "reading_time": delay_data["reading_time"],
+                    "min_reading_delay": delay_data["min_reading_delay"],
+                    "response_segments": delay_data["response_segments"],
                 }
 
             return JsonResponse(

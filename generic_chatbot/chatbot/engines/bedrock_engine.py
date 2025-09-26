@@ -5,12 +5,11 @@ Amazon Bedrock engine for Kani framework.
 import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 import boto3
 from botocore.exceptions import ClientError
-
-from kani.engines.base import BaseEngine, BaseCompletion
+from kani.engines.base import BaseCompletion, BaseEngine
 from kani.models import ChatMessage, ChatRole
 from kani.prompts.pipeline import PromptPipeline
 
@@ -48,7 +47,7 @@ class BedrockEngine(BaseEngine):
         max_tokens: int = 1000,
         temperature: float = 0.7,
         top_p: float = 0.9,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
 
@@ -64,7 +63,7 @@ class BedrockEngine(BaseEngine):
                 "AWS_ACCESS_KEY_ID"),
             aws_secret_access_key=aws_secret_access_key or os.getenv(
                 "AWS_SECRET_ACCESS_KEY"),
-            region_name=region_name
+            region_name=region_name,
         )
 
         # Set context size based on model
@@ -126,7 +125,7 @@ class BedrockEngine(BaseEngine):
             # If no system prompt at start, add a default one
             messages.insert(0, {
                 "role": "user",
-                "content": [{"text": "You are a helpful assistant."}]
+                "content": [{"text": "You are a helpful assistant."}],
             })
         return messages
 
@@ -148,7 +147,7 @@ class BedrockEngine(BaseEngine):
         self,
         messages: List[ChatMessage],
         functions: Optional[List] = None,
-        **kwargs
+        **kwargs,
     ) -> BedrockCompletion:
         """Generate a response from Bedrock."""
         try:
@@ -160,7 +159,7 @@ class BedrockEngine(BaseEngine):
             response = await loop.run_in_executor(
                 self._executor,
                 self._call_bedrock,
-                conversation
+                conversation,
             )
 
             # Extract response text
@@ -179,7 +178,7 @@ class BedrockEngine(BaseEngine):
         self,
         messages: List[ChatMessage],
         functions: Optional[List] = None,
-        **kwargs
+        **kwargs,
     ):
         """Stream a response from Bedrock."""
         try:
@@ -191,14 +190,14 @@ class BedrockEngine(BaseEngine):
             response = await loop.run_in_executor(
                 self._executor,
                 self._call_bedrock_stream,
-                conversation
+                conversation,
             )
 
             # Process the streaming response
-            for event in response['stream']:
-                if 'contentBlockDelta' in event:
+            for event in response["stream"]:
+                if "contentBlockDelta" in event:
                     # Extract text chunk from the delta
-                    text_chunk = event['contentBlockDelta']['delta']['text']
+                    text_chunk = event["contentBlockDelta"]["delta"]["text"]
                     yield text_chunk
 
         except Exception as e:
@@ -214,7 +213,7 @@ class BedrockEngine(BaseEngine):
                     "maxTokens": self.max_tokens,
                     "temperature": self.temperature,
                     "topP": self.top_p,
-                }
+                },
             )
             return response
         except ClientError as e:
@@ -230,7 +229,7 @@ class BedrockEngine(BaseEngine):
                     "maxTokens": self.max_tokens,
                     "temperature": self.temperature,
                     "topP": self.top_p,
-                }
+                },
             )
             return response
         except ClientError as e:
@@ -238,7 +237,7 @@ class BedrockEngine(BaseEngine):
 
     async def close(self):
         """Close the engine and cleanup resources."""
-        if hasattr(self, '_executor'):
+        if hasattr(self, "_executor"):
             self._executor.shutdown(wait=True)
 
     def explain_pipeline(self):

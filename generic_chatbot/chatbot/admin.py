@@ -579,7 +579,7 @@ class BotAdmin(BaseAdmin):
             return format_html('<span class="default-moderation">Using defaults</span>')
         else:
             return format_html(
-                '<span class="custom-moderation">{} custom values</span>', custom_count
+                '<span class="custom-moderation">{} custom values</span>', custom_count,
             )
 
     moderation_summary.short_description = "Moderation"

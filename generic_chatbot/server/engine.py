@@ -3,6 +3,7 @@ import os
 
 from kani.engines.anthropic import AnthropicEngine
 from kani.engines.openai import OpenAIEngine
+
 from chatbot.engines.bedrock_engine import BedrockEngine
 
 # Get logger for this module
@@ -32,7 +33,7 @@ def initialize_engine(model_type, model_id, csv_name=""):
             model_id=model_id,
             aws_access_key_id=aws_key,
             aws_secret_access_key=aws_secret,
-            region_name=os.getenv("AWS_REGION", "us-east-1")
+            region_name=os.getenv("AWS_REGION", "us-east-1"),
         )
 
     raise ValueError(f"Unsupported model type: {model_type}")
@@ -61,7 +62,7 @@ def initialize_engine_from_model(model):
             model_id=model.model_id,
             aws_access_key_id=aws_key,
             aws_secret_access_key=aws_secret,
-            region_name=os.getenv("AWS_REGION", "us-east-1")
+            region_name=os.getenv("AWS_REGION", "us-east-1"),
         )
 
     raise ValueError(f"Unsupported model provider: {model.provider.name}")

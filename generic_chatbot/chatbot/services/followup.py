@@ -331,7 +331,10 @@ class FollowupAPIView(View):
 
                 # Split response into chunks
                 if use_chunks:
-                    from .post_processing import human_like_chunks, calculate_typing_delays
+                    from .post_processing import (
+                        calculate_typing_delays,
+                        human_like_chunks,
+                    )
                     response_chunks = human_like_chunks(response_text)
                 else:
                     response_chunks = [response_text]
@@ -344,9 +347,9 @@ class FollowupAPIView(View):
                     simulated_user_message, response_chunks, bot)
 
                 delay_config = {
-                    "reading_time": delay_data['reading_time'],
-                    "min_reading_delay": delay_data['min_reading_delay'],
-                    "response_segments": delay_data['response_segments']
+                    "reading_time": delay_data["reading_time"],
+                    "min_reading_delay": delay_data["min_reading_delay"],
+                    "response_segments": delay_data["response_segments"],
                 }
 
             except Bot.DoesNotExist:
@@ -374,7 +377,10 @@ class FollowupAPIView(View):
 
                 # Split response into chunks
                 if use_chunks:
-                    from .post_processing import human_like_chunks, calculate_typing_delays
+                    from .post_processing import (
+                        calculate_typing_delays,
+                        human_like_chunks,
+                    )
                     response_chunks = human_like_chunks(response_text)
                 else:
                     response_chunks = [response_text]
@@ -387,9 +393,9 @@ class FollowupAPIView(View):
                     simulated_user_message, response_chunks, default_bot)
 
                 delay_config = {
-                    "reading_time": delay_data['reading_time'],
-                    "min_reading_delay": delay_data['min_reading_delay'],
-                    "response_segments": delay_data['response_segments']
+                    "reading_time": delay_data["reading_time"],
+                    "min_reading_delay": delay_data["min_reading_delay"],
+                    "response_segments": delay_data["response_segments"],
                 }
 
             return JsonResponse(

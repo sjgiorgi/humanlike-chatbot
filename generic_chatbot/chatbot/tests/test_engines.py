@@ -3,12 +3,14 @@ Comprehensive engine testing - minimal, DRY, focused.
 Tests engine initialization, real API calls, and engine agnosticism.
 """
 import os
+
 import pytest
 from kani import Kani
-from kani.engines.openai import OpenAIEngine
 from kani.engines.anthropic import AnthropicEngine
+from kani.engines.openai import OpenAIEngine
+
 from chatbot.engines.bedrock_engine import BedrockEngine
-from server.engine import initialize_engine, initialize_engine_from_model
+from server.engine import initialize_engine
 
 
 class TestEngines:
@@ -21,9 +23,9 @@ class TestEngines:
     def test_initialize_engine_bedrock(self):
         """Test BedrockEngine creation through initialize_engine."""
         with pytest.MonkeyPatch().context() as m:
-            m.setenv('AWS_ACCESS_KEY_ID', 'test-key')
-            m.setenv('AWS_SECRET_ACCESS_KEY', 'test-secret')
-            m.setenv('AWS_REGION', 'us-west-2')
+            m.setenv("AWS_ACCESS_KEY_ID", "test-key")
+            m.setenv("AWS_SECRET_ACCESS_KEY", "test-secret")
+            m.setenv("AWS_REGION", "us-west-2")
 
             engine = initialize_engine(
                 "Bedrock", "meta.llama3-8b-instruct-v1:0")
@@ -35,8 +37,8 @@ class TestEngines:
     def test_initialize_engine_missing_credentials(self):
         """Test engine creation with missing credentials."""
         with pytest.MonkeyPatch().context() as m:
-            m.delenv('AWS_ACCESS_KEY_ID', raising=False)
-            m.delenv('AWS_SECRET_ACCESS_KEY', raising=False)
+            m.delenv("AWS_ACCESS_KEY_ID", raising=False)
+            m.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
 
             with pytest.raises(ValueError, match="Missing AWS credentials"):
                 initialize_engine("Bedrock", "meta.llama3-8b-instruct-v1:0")
@@ -55,7 +57,6 @@ class TestEngines:
 
         assert response is not None
         assert len(response) > 0
-        print(f"OpenAI response: {response[:50]}...")
 
     @pytest.mark.asyncio
     async def test_anthropic_real_api(self):
@@ -71,7 +72,6 @@ class TestEngines:
 
         assert response is not None
         assert len(response) > 0
-        print(f"Anthropic response: {response[:50]}...")
 
     @pytest.mark.asyncio
     async def test_bedrock_real_api(self):
@@ -85,14 +85,13 @@ class TestEngines:
             model_id="meta.llama3-8b-instruct-v1:0",
             aws_access_key_id=aws_key,
             aws_secret_access_key=aws_secret,
-            region_name=os.getenv("AWS_REGION", "us-east-1")
+            region_name=os.getenv("AWS_REGION", "us-east-1"),
         )
         kani = Kani(engine, system_prompt=self.SYSTEM_PROMPT)
         response = await kani.chat_round_str(self.TEST_PROMPT)
 
         assert response is not None
         assert len(response) > 0
-        print(f"Bedrock response: {response[:50]}...")
 
     # Engine agnosticism test
     @pytest.mark.asyncio
@@ -102,7 +101,7 @@ class TestEngines:
         test_cases = [
             ("OpenAI", "gpt-4o-mini"),
             ("Anthropic", "claude-sonnet-4-20250514"),
-            ("Bedrock", "meta.llama3-8b-instruct-v1:0")
+            ("Bedrock", "meta.llama3-8b-instruct-v1:0"),
         ]
 
         for provider, model_id in test_cases:
@@ -112,7 +111,6 @@ class TestEngines:
                 response = await kani.chat_round_str(self.TEST_PROMPT)
                 assert response is not None
                 assert len(response) > 0
-                print(f"✅ {provider} {model_id}: {response[:30]}...")
             except Exception as e:
                 # Skip if credentials not available
                 if "not set" in str(e) or "credentials" in str(e).lower():
