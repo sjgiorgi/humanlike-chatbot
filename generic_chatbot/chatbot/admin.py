@@ -649,23 +649,6 @@ class BotAdmin(BaseAdmin):
                 "classes": ("collapse",),
             },
         ),
-        # OLD: Legacy delay configuration (commented out)
-        # (
-        #     "Legacy Delay Configuration",
-        #     {
-        #         "fields": (
-        #             "typing_speed_min_ms",
-        #             "typing_speed_max_ms",
-        #             "question_thinking_ms",
-        #             "first_chunk_thinking_ms",
-        #             "last_chunk_pause_ms",
-        #             "min_delay_ms",
-        #             "max_delay_ms",
-        #         ),
-        #         "description": "Legacy delay parameters (milliseconds) - kept for backward compatibility",
-        #         "classes": ("collapse",),
-        #     },
-        # ),
         (
             "Follow-up Settings",
             {

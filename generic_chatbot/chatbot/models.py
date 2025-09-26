@@ -268,41 +268,6 @@ class Model(models.Model):
                     "display_name": "Llama 3 70B Instruct",
                     "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
                 },
-                {
-                    "model_id": "meta.llama3.1-8b-instruct-v1:0",
-                    "display_name": "Llama 3.1 8B Instruct",
-                    "capabilities": ["Chat", "Basic Reasoning", "Code"],
-                },
-                {
-                    "model_id": "meta.llama3.1-70b-instruct-v1:0",
-                    "display_name": "Llama 3.1 70B Instruct",
-                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
-                },
-                {
-                    "model_id": "meta.llama3.2-1b-instruct-v1:0",
-                    "display_name": "Llama 3.2 1B Instruct",
-                    "capabilities": ["Chat", "Basic Reasoning"],
-                },
-                {
-                    "model_id": "meta.llama3.2-3b-instruct-v1:0",
-                    "display_name": "Llama 3.2 3B Instruct",
-                    "capabilities": ["Chat", "Basic Reasoning", "Code"],
-                },
-                {
-                    "model_id": "meta.llama3.2-11b-instruct-v1:0",
-                    "display_name": "Llama 3.2 11B Instruct",
-                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
-                },
-                {
-                    "model_id": "meta.llama3.2-90b-instruct-v1:0",
-                    "display_name": "Llama 3.2 90B Instruct",
-                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis", "Vision"],
-                },
-                {
-                    "model_id": "meta.llama3.3-70b-instruct-v1:0",
-                    "display_name": "Llama 3.3 70B Instruct",
-                    "capabilities": ["Chat", "Reasoning", "Code", "Analysis"],
-                },
             ],
         }
 
@@ -462,36 +427,6 @@ class Bot(models.Model):
         default=1.0,
         help_text="Minimum reading delay in seconds",
     )
-
-    # OLD: Legacy delay configuration (commented out for backward compatibility)
-    # typing_speed_min_ms = models.IntegerField(
-    #     default=100,
-    #     help_text="Minimum milliseconds per character for typing speed (base delay)",
-    # )
-    # typing_speed_max_ms = models.IntegerField(
-    #     default=200,
-    #     help_text="Maximum milliseconds per character for typing speed (base delay)",
-    # )
-    # question_thinking_ms = models.IntegerField(
-    #     default=300,
-    #     help_text="Additional milliseconds for chunks containing questions",
-    # )
-    # first_chunk_thinking_ms = models.IntegerField(
-    #     default=600,
-    #     help_text="Additional milliseconds for the first chunk (thinking time)",
-    # )
-    # last_chunk_pause_ms = models.IntegerField(
-    #     default=100,
-    #     help_text="Additional milliseconds for the last chunk",
-    # )
-    # min_delay_ms = models.IntegerField(
-    #     default=200,
-    #     help_text="Minimum delay in milliseconds (when backend is fast)",
-    # )
-    # max_delay_ms = models.IntegerField(
-    #     default=800,
-    #     help_text="Maximum delay in milliseconds (when backend is slow)",
-    # )
 
     # Follow-up on idle settings
     follow_up_on_idle = models.BooleanField(

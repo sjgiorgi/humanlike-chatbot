@@ -93,6 +93,16 @@ class TestEngines:
         assert response is not None
         assert len(response) > 0
 
+    def _has_credentials(self, provider):
+        """Check if credentials are available for the provider"""
+        if provider == "OpenAI":
+            return bool(os.getenv("OPENAI_API_KEY"))
+        elif provider == "Anthropic":
+            return bool(os.getenv("ANTHROPIC_API_KEY"))
+        elif provider == "Bedrock":
+            return bool(os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY"))
+        return False
+
     # Engine agnosticism test
     @pytest.mark.asyncio
     async def test_engine_agnosticism(self):
@@ -105,15 +115,12 @@ class TestEngines:
         ]
 
         for provider, model_id in test_cases:
-            try:
-                engine = initialize_engine(provider, model_id)
-                kani = Kani(engine, system_prompt=self.SYSTEM_PROMPT)
-                response = await kani.chat_round_str(self.TEST_PROMPT)
-                assert response is not None
-                assert len(response) > 0
-            except Exception as e:
-                # Skip if credentials not available
-                if "not set" in str(e) or "credentials" in str(e).lower():
-                    pytest.skip(f"Credentials not available for {provider}")
-                else:
-                    raise
+            # Check credentials first to avoid try-except in loop
+            if not self._has_credentials(provider):
+                pytest.skip(f"Credentials not available for {provider}")
+
+            engine = initialize_engine(provider, model_id)
+            kani = Kani(engine, system_prompt=self.SYSTEM_PROMPT)
+            response = await kani.chat_round_str(self.TEST_PROMPT)
+            assert response is not None
+            assert len(response) > 0
