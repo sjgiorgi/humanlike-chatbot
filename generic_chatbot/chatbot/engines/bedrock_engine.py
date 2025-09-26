@@ -90,8 +90,6 @@ class BedrockEngine(BaseEngine):
         """Create the prompt pipeline for Bedrock message conversion."""
         return (
             PromptPipeline()
-            # Ensure conversation starts with user message
-            .ensure_start(role=ChatRole.USER)
             # Convert to Bedrock format: list of dicts with role/content
             .conversation_dict(
                 system_role="user",  # Map system to user for Bedrock
@@ -100,6 +98,8 @@ class BedrockEngine(BaseEngine):
                 function_role="user",  # Map function to user for Bedrock
                 content_transform=self._transform_content,
             )
+            # Ensure conversation starts with user message (after role mapping)
+            .macro_apply(self._ensure_starts_with_user)
             # Ensure conversation ends with user message (Bedrock requirement)
             .macro_apply(self._ensure_ends_with_user)
         )
@@ -112,6 +112,16 @@ class BedrockEngine(BaseEngine):
             return message.content
         else:
             return [{"text": str(message.content)}]
+
+    def _ensure_starts_with_user(self, messages: List[Dict], functions: List) -> List[Dict]:
+        """Ensure the conversation starts with a user message (system prompt)."""
+        if not messages or messages[0]["role"] != "user":
+            # If no system prompt at start, add a default one
+            messages.insert(0, {
+                "role": "user",
+                "content": [{"text": "You are a helpful assistant."}]
+            })
+        return messages
 
     def _ensure_ends_with_user(self, messages: List[Dict], functions: List) -> List[Dict]:
         """Ensure the conversation ends with a user message (Bedrock requirement)."""
