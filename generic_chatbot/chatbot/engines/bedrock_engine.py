@@ -155,8 +155,10 @@ class BedrockEngine(BaseEngine):
                 conversation,
             )
 
-            # Extract response text
+            # Extract response text and clean it
             response_text = response["output"]["message"]["content"][0]["text"]
+            # Remove leading/trailing whitespace and newlines
+            response_text = response_text.strip()
 
             # Create response message
             response_message = ChatMessage(

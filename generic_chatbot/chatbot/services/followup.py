@@ -64,12 +64,12 @@ async def run_followup_chat_round(
     """
     from kani import ChatMessage, ChatRole, Kani
 
-    from server.engine import get_or_create_engine
+    from server.engine import get_or_create_engine_from_model
 
-    # Fetch bot object with personas prefetched
-    bot = await sync_to_async(Bot.objects.prefetch_related("personas").get)(
-        name=bot_name,
-    )
+    # Fetch bot object with personas and ai_model prefetched
+    bot = await sync_to_async(
+        Bot.objects.prefetch_related("personas", "ai_model__provider").get,
+    )(name=bot_name)
 
     # Retrieve history from cache
     cache_key = f"conversation_cache_{conversation_id}"
@@ -143,12 +143,9 @@ async def run_followup_chat_round(
 
     system_prompt = generate_system_prompt(bot, selected_persona)
 
-    # Run Kani
-    engine = get_or_create_engine(
-        bot.model_type,
-        bot.model_id,
-        followup_engine_instances,
-    )
+    # Run Kani - ai_model is now required
+    engine = get_or_create_engine_from_model(
+        bot.ai_model, followup_engine_instances)
     kani = Kani(engine, system_prompt=system_prompt,
                 chat_history=formatted_history)
 
