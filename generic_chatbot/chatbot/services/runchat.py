@@ -71,7 +71,7 @@ async def save_chat_to_db(
 
         # Debug logging for Bedrock engine save
         if bot_name and "bedrock" in bot_name.lower():
-            logger.info(f"Saving Bedrock utterance to DB:")
+            logger.info("Saving Bedrock utterance to DB:")
             logger.info(f"  - conversation_id: {conversation_id}")
             logger.info(f"  - speaker_id: {speaker_id}")
             logger.info(
@@ -262,7 +262,7 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
 
     # Debug logging for Bedrock engine save operation
     if bot.ai_model.provider.name == "Bedrock":
-        logger.info(f"Saving Bedrock response to DB:")
+        logger.info("Saving Bedrock response to DB:")
         logger.info(f"  - instruction_prompt: {len(system_prompt)} chars")
         logger.info(f"  - chat_history_used: {len(chat_history_json)} chars")
         logger.info(f"  - response_text: {len(response_text)} chars")
