@@ -137,14 +137,6 @@ class BotDetailAPIView(View):
                 "intra_message_delay_min": bot.intra_message_delay_min,
                 "intra_message_delay_max": bot.intra_message_delay_max,
                 "min_reading_delay": bot.min_reading_delay,
-                # OLD: Legacy fields (commented out)
-                # "typing_speed_min_ms": bot.typing_speed_min_ms,
-                # "typing_speed_max_ms": bot.typing_speed_max_ms,
-                # "question_thinking_ms": bot.question_thinking_ms,
-                # "first_chunk_thinking_ms": bot.first_chunk_thinking_ms,
-                # "last_chunk_pause_ms": bot.last_chunk_pause_ms,
-                # "min_delay_ms": bot.min_delay_ms,
-                # "max_delay_ms": bot.max_delay_ms,
                 "follow_up_on_idle": bot.follow_up_on_idle,
                 "idle_time_minutes": bot.idle_time_minutes,
                 "follow_up_instruction_prompt": bot.follow_up_instruction_prompt,
@@ -201,28 +193,6 @@ class BotDetailAPIView(View):
             bot.min_reading_delay = data.get(
                 "min_reading_delay", bot.min_reading_delay)
             # OLD: Legacy fields (commented out)
-            # bot.typing_speed_min_ms = data.get(
-            #     "typing_speed_min_ms",
-            #     bot.typing_speed_min_ms,
-            # )
-            # bot.typing_speed_max_ms = data.get(
-            #     "typing_speed_max_ms",
-            #     bot.typing_speed_max_ms,
-            # )
-            # bot.question_thinking_ms = data.get(
-            #     "question_thinking_ms",
-            #     bot.question_thinking_ms,
-            # )
-            # bot.first_chunk_thinking_ms = data.get(
-            #     "first_chunk_thinking_ms",
-            #     bot.first_chunk_thinking_ms,
-            # )
-            # bot.last_chunk_pause_ms = data.get(
-            #     "last_chunk_pause_ms",
-            #     bot.last_chunk_pause_ms,
-            # )
-            # bot.min_delay_ms = data.get("min_delay_ms", bot.min_delay_ms)
-            # bot.max_delay_ms = data.get("max_delay_ms", bot.max_delay_ms)
             bot.follow_up_on_idle = data.get(
                 "follow_up_on_idle", bot.follow_up_on_idle)
             bot.idle_time_minutes = data.get(

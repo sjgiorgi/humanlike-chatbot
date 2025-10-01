@@ -69,6 +69,16 @@ async def save_chat_to_db(
             conversation_id=conversation_id,
         )
 
+        # Debug logging for Bedrock engine save
+        if bot_name and "bedrock" in bot_name.lower():
+            logger.info("Saving Bedrock utterance to DB:")
+            logger.info(f"  - conversation_id: {conversation_id}")
+            logger.info(f"  - speaker_id: {speaker_id}")
+            logger.info(
+                f"  - instruction_prompt: {len(instruction_prompt) if instruction_prompt else 'None'}")
+            logger.info(
+                f"  - chat_history_used: {len(chat_history_used) if chat_history_used else 'None'}")
+
         await sync_to_async(Utterance.objects.create)(
             conversation=conversation,
             speaker_id=speaker_id,
@@ -78,6 +88,9 @@ async def save_chat_to_db(
             instruction_prompt=instruction_prompt,
             chat_history_used=chat_history_used,
         )
+
+        logger.info(
+            f"Successfully saved utterance for conversation {conversation_id}")
 
     except Conversation.DoesNotExist:
         logger.warning(f"Conversation with ID {conversation_id} not found.")
@@ -149,7 +162,8 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
             # Build conversation history from database
             for utterance in utterances:
                 role = "user" if utterance.speaker_id == "user" else "assistant"
-                conversation_history.append({"role": role, "content": utterance.text})
+                conversation_history.append(
+                    {"role": role, "content": utterance.text})
 
             # Populate cache
             cache.set(cache_key, conversation_history, timeout=3600)
@@ -157,13 +171,14 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
                 f"Loaded {len(conversation_history)} messages from database for conversation {conversation_id}",
             )
         except Exception as e:
-            logger.warning(f"Failed to load conversation history from database: {e}")
+            logger.warning(
+                f"Failed to load conversation history from database: {e}")
             conversation_history = []
 
     # Apply transcript length limit to history only (before adding new message)
     if bot.max_transcript_length > 0:
         # Keep only the latest messages from history up to the limit
-        conversation_history = conversation_history[-bot.max_transcript_length :]
+        conversation_history = conversation_history[-bot.max_transcript_length:]
         logger.info(
             f"Limited history to {len(conversation_history)} messages (max: {bot.max_transcript_length})",
         )
@@ -199,7 +214,8 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
 
     # Log the generated prompt for debugging
     logger.info(f"Bot '{bot.name}' system prompt:")
-    logger.info(f"   Base prompt: {bot.prompt[:100] if bot.prompt else 'None'}...")
+    logger.info(
+        f"   Base prompt: {bot.prompt[:100] if bot.prompt else 'None'}...")
     logger.info(
         f"   Selected persona: {selected_persona.name if selected_persona and hasattr(selected_persona, 'name') else 'None'}",
     )
@@ -207,7 +223,8 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
 
     # Run Kani - ai_model is now required
     engine = get_or_create_engine_from_model(bot.ai_model, engine_instances)
-    kani = Kani(engine, system_prompt=system_prompt, chat_history=formatted_history)
+    kani = Kani(engine, system_prompt=system_prompt,
+                chat_history=formatted_history)
 
     latest_user_message = formatted_history[-1].content
     response_text = ""
@@ -222,8 +239,15 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
     # Store only the chat history sent to LLM (excluding the new user message)
     chat_history_json = json.dumps(conversation_history[:-1], indent=2)
 
+    # Debug logging for Bedrock engine
+    if bot.ai_model.provider.name == "Bedrock":
+        logger.info(f"Bedrock engine response: '{response_text}'")
+        logger.info(f"System prompt length: {len(system_prompt)}")
+        logger.info(f"Chat history length: {len(chat_history_json)}")
+
     # Append bot response
-    conversation_history.append({"role": "assistant", "content": response_text})
+    conversation_history.append(
+        {"role": "assistant", "content": response_text})
     cache.set(cache_key, conversation_history, timeout=3600)
 
     # Save to DB (but not followup requests)
@@ -235,6 +259,13 @@ async def run_chat_round(bot_name, conversation_id, participant_id, message):
             bot_name=None,
             participant_id=participant_id,
         )
+
+    # Debug logging for Bedrock engine save operation
+    if bot.ai_model.provider.name == "Bedrock":
+        logger.info("Saving Bedrock response to DB:")
+        logger.info(f"  - instruction_prompt: {len(system_prompt)} chars")
+        logger.info(f"  - chat_history_used: {len(chat_history_json)} chars")
+        logger.info(f"  - response_text: {len(response_text)} chars")
 
     await save_chat_to_db(
         conversation_id=conversation_id,

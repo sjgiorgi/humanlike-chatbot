@@ -341,7 +341,7 @@ const Conversation = () => {
 
     // Calculate actual reading time (frontend handles backend latency)
     const backendLatencySeconds = backendTimeMs / 1000;
-    const effectiveReadingTime = Math.min(
+    const effectiveReadingTime = Math.max(
       min_reading_delay,
       reading_time - backendLatencySeconds
     );
