@@ -25,7 +25,7 @@ class TestEngines:
         with pytest.MonkeyPatch().context() as m:
             m.setenv("AWS_ACCESS_KEY_ID", "test-key")
             m.setenv("AWS_SECRET_ACCESS_KEY", "test-secret")
-            m.setenv("AWS_REGION", "us-west-2")
+            m.setenv("AWS_REGION", "us-east-1")
 
             engine = initialize_engine(
                 "Bedrock", "meta.llama3-8b-instruct-v1:0")
