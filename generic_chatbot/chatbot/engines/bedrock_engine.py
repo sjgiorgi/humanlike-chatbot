@@ -57,14 +57,18 @@ class BedrockEngine(BaseEngine):
         self.top_p = top_p
 
         # Initialize Bedrock client
-        self.client = boto3.client(
-            "bedrock-runtime",
-            aws_access_key_id=aws_access_key_id or os.getenv(
-                "AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=aws_secret_access_key or os.getenv(
-                "AWS_SECRET_ACCESS_KEY"),
-            region_name=region_name,
-        )
+        if aws_access_key_id and aws_secret_access_key:
+            # Use explicit credentials (local dev or explicit service account)
+            self.client = boto3.client(
+                "bedrock-runtime",
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+                region_name=region_name,
+            )
+        else:
+            # Use credential chain (AWS - IAM instance profile)
+            self.client = boto3.client(
+                "bedrock-runtime", region_name=region_name)
 
         # Set context size based on model
         self.max_context_size = self._get_model_context_size(model_id)

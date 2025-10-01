@@ -27,14 +27,20 @@ def initialize_engine(model_type, model_id, csv_name=""):
     if model_type == "Bedrock":
         aws_key = os.getenv("AWS_ACCESS_KEY_ID")
         aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY")
-        if not aws_key or not aws_secret:
-            raise ValueError("Missing AWS credentials.")
-        return BedrockEngine(
-            model_id=model_id,
-            aws_access_key_id=aws_key,
-            aws_secret_access_key=aws_secret,
-            region_name=os.getenv("AWS_REGION", "us-east-1"),
-        )
+        if aws_key and aws_secret:
+            # Use explicit credentials (local dev or explicit service account)
+            return BedrockEngine(
+                model_id=model_id,
+                aws_access_key_id=aws_key,
+                aws_secret_access_key=aws_secret,
+                region_name=os.getenv("AWS_REGION", "us-east-1"),
+            )
+        else:
+            # Use default credential chain (IAM instance profile in AWS)
+            return BedrockEngine(
+                model_id=model_id,
+                region_name=os.getenv("AWS_REGION", "us-east-1"),
+            )
 
     raise ValueError(f"Unsupported model type: {model_type}")
 
@@ -56,14 +62,20 @@ def initialize_engine_from_model(model):
     if model.provider.name == "Bedrock":
         aws_key = os.getenv("AWS_ACCESS_KEY_ID")
         aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY")
-        if not aws_key or not aws_secret:
-            raise ValueError("Missing AWS credentials.")
-        return BedrockEngine(
-            model_id=model.model_id,
-            aws_access_key_id=aws_key,
-            aws_secret_access_key=aws_secret,
-            region_name=os.getenv("AWS_REGION", "us-east-1"),
-        )
+        if aws_key and aws_secret:
+            # Use explicit credentials (local dev or explicit service account)
+            return BedrockEngine(
+                model_id=model.model_id,
+                aws_access_key_id=aws_key,
+                aws_secret_access_key=aws_secret,
+                region_name=os.getenv("AWS_REGION", "us-east-1"),
+            )
+        else:
+            # Use default credential chain (IAM instance profile in AWS)
+            return BedrockEngine(
+                model_id=model.model_id,
+                region_name=os.getenv("AWS_REGION", "us-east-1"),
+            )
 
     raise ValueError(f"Unsupported model provider: {model.provider.name}")
 
