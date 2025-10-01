@@ -3,7 +3,6 @@ Amazon Bedrock engine for Kani framework.
 """
 
 import asyncio
-import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 

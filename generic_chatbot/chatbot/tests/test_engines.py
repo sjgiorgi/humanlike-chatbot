@@ -34,14 +34,6 @@ class TestEngines:
             assert engine.max_tokens == 1000
             assert engine.temperature == 0.7
 
-    def test_initialize_engine_missing_credentials(self):
-        """Test engine creation with missing credentials."""
-        with pytest.MonkeyPatch().context() as m:
-            m.delenv("AWS_ACCESS_KEY_ID", raising=False)
-            m.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
-
-            with pytest.raises(ValueError, match="Missing AWS credentials"):
-                initialize_engine("Bedrock", "meta.llama3-8b-instruct-v1:0")
 
     # Real API call tests (sample models only)
     @pytest.mark.asyncio
