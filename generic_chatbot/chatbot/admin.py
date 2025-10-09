@@ -8,6 +8,8 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.html import format_html
+from import_export import resources
+from import_export.admin import ExportMixin
 from PIL import Image
 
 from .models import (
@@ -184,6 +186,30 @@ class BaseAdmin(admin.ModelAdmin):
         return list_display
 
 
+class ConversationResource(resources.ModelResource):
+    """Resource class for exporting Conversation data"""
+
+    class Meta:
+        model = Conversation
+        # Export all fields by default
+
+
+class BotResource(resources.ModelResource):
+    """Resource class for exporting Bot data"""
+
+    class Meta:
+        model = Bot
+        # Export all fields by default
+
+
+class UtteranceResource(resources.ModelResource):
+    """Resource class for exporting Utterance data"""
+
+    class Meta:
+        model = Utterance
+        # Export all fields by default
+
+
 @admin.register(Persona)
 class PersonaAdmin(BaseAdmin):
     list_display = (
@@ -243,7 +269,8 @@ class PersonaAdmin(BaseAdmin):
 
 
 @admin.register(Conversation)
-class ConversationAdmin(BaseAdmin):
+class ConversationAdmin(ExportMixin, BaseAdmin):
+    resource_class = ConversationResource
     list_display = (
         "conversation_id",
         "bot_name",
@@ -327,7 +354,8 @@ class ConversationAdmin(BaseAdmin):
 
 
 @admin.register(Utterance)
-class UtteranceAdmin(BaseAdmin):
+class UtteranceAdmin(ExportMixin, BaseAdmin):
+    resource_class = UtteranceResource
     list_display = (
         "conversation_link",
         "speaker_id",
@@ -449,7 +477,8 @@ class UtteranceAdmin(BaseAdmin):
 
 
 @admin.register(Bot)
-class BotAdmin(BaseAdmin):
+class BotAdmin(ExportMixin, BaseAdmin):
+    resource_class = BotResource
     form = BotAdminForm
 
     list_display = (

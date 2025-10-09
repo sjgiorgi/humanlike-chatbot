@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "django_redis",
     "chatbot",
     "rest_framework",
+    "import_export",
 ]
 
 MIDDLEWARE = [
