@@ -1,7 +1,7 @@
-name: Destroy ChatLab Infrastructure
+name: 💣 Destroy ChatLab Infrastructure
 
 on:
-  workflow_dispatch:  # Run manually from the GitHub Actions tab
+  workflow_dispatch: # manual trigger from the Actions tab
 
 permissions:
   contents: read
@@ -12,33 +12,45 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      AWS_DEFAULT_REGION: us-east-1
       AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
 
     steps:
-      - name: Checkout repo
+      - name: ⚙️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Terraform
+      - name: 🧱 Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.5
 
-      - name: Configure AWS credentials
+      - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Initialize Terraform
+      - name: 🏗️ Initialize Terraform
         working-directory: infra
         run: terraform init -input=false
 
-      - name: Confirm Destruction Plan
+      - name: ⚠️ Confirm Destruction Plan
         working-directory: infra
-        run: terraform plan -destroy -out=tfplan -input=false
+        run: terraform plan -destroy -input=false \
+          -var "aws_region=us-east-1" \
+          -var "project_name=chatlab" \
+          -var "db_username=admin" \
+          -var "db_password=temporarypassword" \
+          -var "root_domain=chatlab-test.com" \
+          -var "subdomain=chatlab"
 
-      - name: Destroy Infrastructure
+      - name: 💥 Destroy All AWS Resources
         working-directory: infra
-        run: terraform destroy -auto-approve -input=false
+        run: terraform destroy -auto-approve -input=false \
+          -var "aws_region=us-east-1" \
+          -var "project_name=chatlab" \
+          -var "db_username=admin" \
+          -var "db_password=temporarypassword" \
+          -var "root_domain=chatlab-test.com" \
+          -var "subdomain=chatlab"
