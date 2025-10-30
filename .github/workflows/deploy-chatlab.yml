@@ -56,18 +56,18 @@ jobs:
       - name: Terraform Apply
         id: tf
         working-directory: infra
-        run: terraform apply -auto-approve -var "aws_region=${{ github.event.inputs.aws_region }}" -var "project_name=${{ github.event.inputs.project_name }}" -var "db_username=${{ github.event.inputs.db_username }}" -var "db_password=${{ github.event.inputs.db_password }}" -var "root_domain=${{ github.event.inputs.root_domain }}" -var "subdomain=${{ github.event.inputs.subdomain }}"
+        run: terraform destroy -auto-approve -var "aws_region=${{ github.event.inputs.aws_region }}" -var "project_name=${{ github.event.inputs.project_name }}" -var "db_username=${{ github.event.inputs.db_username }}" -var "db_password=${{ github.event.inputs.db_password }}" -var "root_domain=${{ github.event.inputs.root_domain }}" -var "subdomain=${{ github.event.inputs.subdomain }}"
 
 
-      - name: Read Terraform Outputs
-        id: tf_outputs
-        working-directory: infra
-        run: |
-          echo "FRONTEND_BUCKET=$(terraform output -raw frontend_bucket)" >> $GITHUB_ENV
-          echo "RDS_ENDPOINT=$(terraform output -raw rds_endpoint)" >> $GITHUB_ENV
-          echo "BEANSTALK_URL=$(terraform output -raw beanstalk_url)" >> $GITHUB_ENV
-          echo "CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain)" >> $GITHUB_ENV
-          echo "SITE_URL=$(terraform output -raw site_url)" >> $GITHUB_ENV
+      # - name: Read Terraform Outputs
+      #   id: tf_outputs
+      #   working-directory: infra
+      #   run: |
+      #     echo "FRONTEND_BUCKET=$(terraform output -raw frontend_bucket)" >> $GITHUB_ENV
+      #     echo "RDS_ENDPOINT=$(terraform output -raw rds_endpoint)" >> $GITHUB_ENV
+      #     echo "BEANSTALK_URL=$(terraform output -raw beanstalk_url)" >> $GITHUB_ENV
+      #     echo "CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain)" >> $GITHUB_ENV
+      #     echo "SITE_URL=$(terraform output -raw site_url)" >> $GITHUB_ENV
 
       - name: Build React Frontend
         working-directory: frontend
