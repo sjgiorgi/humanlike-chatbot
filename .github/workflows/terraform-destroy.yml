@@ -1,14 +1,29 @@
 name: 💣 Destroy ChatLab Infrastructure
 
 on:
-  workflow_dispatch: # manual trigger from the Actions tab
+  workflow_dispatch:
+    inputs:
+      db_username:
+        description: "Database username (e.g., admin)"
+        required: true
+        default: "admin"
+      db_password:
+        description: "Database password"
+        required: true
+      root_domain:
+        description: "Base domain (e.g., chatlab-test.com)"
+        required: true
+      subdomain:
+        description: "Subdomain (e.g., chatlab)"
+        required: true
+        default: "chatlab"
 
 permissions:
   contents: read
 
 jobs:
   terraform-destroy:
-    name: Tear Down AWS Resources
+    name: Tear Down ChatLab Resources
     runs-on: ubuntu-latest
 
     env:
@@ -16,10 +31,10 @@ jobs:
       AWS_DEFAULT_REGION: us-east-1
 
     steps:
-      - name: ⚙️ Checkout repository
+      - name: 🧱 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧱 Setup Terraform
+      - name: 🧩 Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.5
@@ -31,29 +46,42 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: 🏗️ Initialize Terraform
+      - name: ⚙️ Initialize Terraform (with remote state)
         working-directory: infra
         run: terraform init -input=false
 
-      - name: ⚠️ Confirm Destruction Plan
+      - name: ⚠️ Show Destruction Plan
         working-directory: infra
         run: |
           terraform plan -destroy -input=false \
             -var="aws_region=us-east-1" \
             -var="project_name=chatlab" \
-            -var="db_username=admin" \
-            -var="db_password=temporarypassword" \
-            -var="root_domain=chatlab-test.com" \
-            -var="subdomain=chatlab"
+            -var="db_username=${{ github.event.inputs.db_username }}" \
+            -var="db_password=${{ github.event.inputs.db_password }}" \
+            -var="root_domain=${{ github.event.inputs.root_domain }}" \
+            -var="subdomain=${{ github.event.inputs.subdomain }}"
 
-      - name: 💥 Destroy All AWS Resources
+      - name: 💥 Destroy All Terraform Resources
         working-directory: infra
         run: |
           terraform destroy -auto-approve -input=false \
             -var="aws_region=us-east-1" \
             -var="project_name=chatlab" \
-            -var="db_username=admin" \
-            -var="db_password=temporarypassword" \
-            -var="root_domain=chatlab-test.com" \
-            -var="subdomain=chatlab"
+            -var="db_username=${{ github.event.inputs.db_username }}" \
+            -var="db_password=${{ github.event.inputs.db_password }}" \
+            -var="root_domain=${{ github.event.inputs.root_domain }}" \
+            -var="subdomain=${{ github.event.inputs.subdomain }}"
 
+      - name: 🧹 Force Cleanup of Residual AWS Resources
+        run: |
+          echo "🔍 Cleaning up any leftover resources..."
+          aws s3 rb s3://chatlab-${{ github.event.inputs.subdomain }}-frontend --force || true
+          aws elasticbeanstalk delete-application --application-name chatlab --terminate-env-by-force || true
+          aws iam delete-role --role-name chatlab-eb-ec2-role || true
+          aws iam delete-instance-profile --instance-profile-name chatlab-eb-instance-profile || true
+          aws rds delete-db-instance --db-instance-identifier chatlab-db --skip-final-snapshot || true
+          aws rds delete-db-subnet-group --db-subnet-group-name chatlab-db-subnet || true
+          aws cloudfront list-origin-access-controls \
+            --query "OriginAccessControls[?Name=='ChatLab-OAC'].Id" --output text | \
+            xargs -I {} aws cloudfront delete-origin-access-control --id {} || true
+          echo "✅ Force cleanup complete."
