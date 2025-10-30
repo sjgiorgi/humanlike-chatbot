@@ -54,5 +54,6 @@ jobs:
             -var="project_name=chatlab" \
             -var="db_username=admin" \
             -var="db_password=temporarypassword" \
-            -var="root_domain=chatlab_
+            -var="root_domain=chatlab-test.com" \
+            -var="subdomain=chatlab"
 
