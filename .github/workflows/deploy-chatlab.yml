@@ -1,101 +1,99 @@
-name: Deploy ChatLab to AWS (One-Click)
+name: 🚀 Deploy ChatLab Infrastructure
 
 on:
   workflow_dispatch:
     inputs:
-      aws_region:
-        description: "AWS region (e.g., us-east-1)"
-        required: true
-        default: "us-east-1"
-      project_name:
-        description: "Name for this deployment"
-        required: true
-        default: "chatlab"
-      root_domain:
-        description: "Base domain in Route53 (e.g., salvatoregiorgi.com)"
-        required: true
-      subdomain:
-        description: "Subdomain for ChatLab (e.g., chatlab)"
-        required: true
-        default: "chatlab"
       db_username:
-        description: "Database username"
+        description: "Database username (e.g., admin)"
         required: true
+        default: "admin"
       db_password:
         description: "Database password"
         required: true
-        type: secret
+      root_domain:
+        description: "Base domain (e.g., chatlab-test.com)"
+        required: true
+      subdomain:
+        description: "Subdomain (e.g., chatlab)"
+        required: true
+        default: "chatlab"
+      force_rebuild:
+        description: "Destroy and rebuild all infrastructure?"
+        required: true
+        default: "false"
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
+    name: Deploy ChatLab
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
+    timeout-minutes: 60
+
+    env:
+      AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
 
     steps:
-      - name: Checkout
+      - name: 🧱 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Terraform
+      - name: 🧩 Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          terraform_version: 1.9.5
 
-      - name: Configure AWS credentials
+      - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ github.event.inputs.aws_region }}
+          aws-region: us-east-1
 
-      - name: Terraform Init
+      - name: ⚙️ Initialize Terraform (with remote state)
         working-directory: infra
-        run: terraform init
+        run: terraform init -input=false
 
-      - name: Terraform Apply
-        id: tf
+      - name: 🧨 Optional Force Destroy
+        if: ${{ github.event.inputs.force_rebuild == 'true' }}
         working-directory: infra
-        run: terraform apply -auto-approve -var "aws_region=${{ github.event.inputs.aws_region }}" -var "project_name=${{ github.event.inputs.project_name }}" -var "db_username=${{ github.event.inputs.db_username }}" -var "db_password=${{ github.event.inputs.db_password }}" -var "root_domain=${{ github.event.inputs.root_domain }}" -var "subdomain=${{ github.event.inputs.subdomain }}"
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -var="aws_region=us-east-1" \
+            -var="project_name=chatlab" \
+            -var="db_username=${{ github.event.inputs.db_username }}" \
+            -var="db_password=${{ github.event.inputs.db_password }}" \
+            -var="root_domain=${{ github.event.inputs.root_domain }}" \
+            -var="subdomain=${{ github.event.inputs.subdomain }}" || true
 
+      - name: 🚀 Deploy Infrastructure
+        working-directory: infra
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="aws_region=us-east-1" \
+            -var="project_name=chatlab" \
+            -var="db_username=${{ github.event.inputs.db_username }}" \
+            -var="db_password=${{ github.event.inputs.db_password }}" \
+            -var="root_domain=${{ github.event.inputs.root_domain }}" \
+            -var="subdomain=${{ github.event.inputs.subdomain }}"
 
-      - name: Read Terraform Outputs
-        id: tf_outputs
+      - name: 📦 Export Terraform Outputs
         working-directory: infra
         run: |
           echo "FRONTEND_BUCKET=$(terraform output -raw frontend_bucket)" >> $GITHUB_ENV
-          echo "RDS_ENDPOINT=$(terraform output -raw rds_endpoint)" >> $GITHUB_ENV
-          echo "BEANSTALK_URL=$(terraform output -raw beanstalk_url)" >> $GITHUB_ENV
-          echo "CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain)" >> $GITHUB_ENV
           echo "SITE_URL=$(terraform output -raw site_url)" >> $GITHUB_ENV
 
-      - name: Build React Frontend
+      - name: 🧰 Build Frontend
         working-directory: generic_chatbot_frontend
         env:
           CI: false
         run: |
           npm ci
           export REACT_APP_API_URL="${SITE_URL}/api"
-          echo "Using REACT_APP_API_URL=$REACT_APP_API_URL"
           npm run build
 
-      - name: Upload Frontend to S3
+      - name: ☁️ Upload Frontend to S3
         run: |
-          aws s3 sync frontend/build s3://$FRONTEND_BUCKET --delete
-          echo "Uploaded to s3://$FRONTEND_BUCKET"
-
-      - name: Invalidate CloudFront Cache
-        run: |
-          # Create an invalidation for root and all assets
-          aws cloudfront create-invalidation \
-            --distribution-id $(aws cloudfront list-distributions \
-              --query "DistributionList.Items[?DomainName=='$CLOUDFRONT_DOMAIN'].Id" --output text) \
-            --paths "/*"
-
-      - name: Summary
-        run: |
-          echo "✅ Deployed ChatLab"
-          echo "🌐 Site:  $SITE_URL"
-          echo "🧠 API:   $SITE_URL/api"
-          echo "🗄️  DB:    $RDS_ENDPOINT"
-          echo "🚀 EB:     $BEANSTALK_URL"
+          aws s3 sync generic_chatbot_frontend/build s3://$FRONTEND_BUCKET --delete
+          echo "✅ Deployed frontend to s3://$FRONTEND_BUCKET"
