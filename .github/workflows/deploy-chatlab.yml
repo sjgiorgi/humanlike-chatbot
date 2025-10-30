@@ -56,46 +56,46 @@ jobs:
       - name: Terraform Apply
         id: tf
         working-directory: infra
-        run: terraform destroy -auto-approve -var "aws_region=${{ github.event.inputs.aws_region }}" -var "project_name=${{ github.event.inputs.project_name }}" -var "db_username=${{ github.event.inputs.db_username }}" -var "db_password=${{ github.event.inputs.db_password }}" -var "root_domain=${{ github.event.inputs.root_domain }}" -var "subdomain=${{ github.event.inputs.subdomain }}"
+        run: terraform apply -auto-approve -var "aws_region=${{ github.event.inputs.aws_region }}" -var "project_name=${{ github.event.inputs.project_name }}" -var "db_username=${{ github.event.inputs.db_username }}" -var "db_password=${{ github.event.inputs.db_password }}" -var "root_domain=${{ github.event.inputs.root_domain }}" -var "subdomain=${{ github.event.inputs.subdomain }}"
 
 
-      # # - name: Read Terraform Outputs
-      # #   id: tf_outputs
-      # #   working-directory: infra
-      # #   run: |
-      # #     echo "FRONTEND_BUCKET=$(terraform output -raw frontend_bucket)" >> $GITHUB_ENV
-      # #     echo "RDS_ENDPOINT=$(terraform output -raw rds_endpoint)" >> $GITHUB_ENV
-      # #     echo "BEANSTALK_URL=$(terraform output -raw beanstalk_url)" >> $GITHUB_ENV
-      # #     echo "CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain)" >> $GITHUB_ENV
-      # #     echo "SITE_URL=$(terraform output -raw site_url)" >> $GITHUB_ENV
+      - name: Read Terraform Outputs
+        id: tf_outputs
+        working-directory: infra
+        run: |
+          echo "FRONTEND_BUCKET=$(terraform output -raw frontend_bucket)" >> $GITHUB_ENV
+          echo "RDS_ENDPOINT=$(terraform output -raw rds_endpoint)" >> $GITHUB_ENV
+          echo "BEANSTALK_URL=$(terraform output -raw beanstalk_url)" >> $GITHUB_ENV
+          echo "CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain)" >> $GITHUB_ENV
+          echo "SITE_URL=$(terraform output -raw site_url)" >> $GITHUB_ENV
 
-      # - name: Build React Frontend
-      #   working-directory: generic_chatbot_frontend
-      #   env:
-      #     CI: false
-      #   run: |
-      #     npm ci
-      #     export REACT_APP_API_URL="${SITE_URL}/api"
-      #     echo "Using REACT_APP_API_URL=$REACT_APP_API_URL"
-      #     npm run build
+      - name: Build React Frontend
+        working-directory: generic_chatbot_frontend
+        env:
+          CI: false
+        run: |
+          npm ci
+          export REACT_APP_API_URL="${SITE_URL}/api"
+          echo "Using REACT_APP_API_URL=$REACT_APP_API_URL"
+          npm run build
 
-      # - name: Upload Frontend to S3
-      #   run: |
-      #     aws s3 sync frontend/build s3://$FRONTEND_BUCKET --delete
-      #     echo "Uploaded to s3://$FRONTEND_BUCKET"
+      - name: Upload Frontend to S3
+        run: |
+          aws s3 sync frontend/build s3://$FRONTEND_BUCKET --delete
+          echo "Uploaded to s3://$FRONTEND_BUCKET"
 
-      # - name: Invalidate CloudFront Cache
-      #   run: |
-      #     # Create an invalidation for root and all assets
-      #     aws cloudfront create-invalidation \
-      #       --distribution-id $(aws cloudfront list-distributions \
-      #         --query "DistributionList.Items[?DomainName=='$CLOUDFRONT_DOMAIN'].Id" --output text) \
-      #       --paths "/*"
+      - name: Invalidate CloudFront Cache
+        run: |
+          # Create an invalidation for root and all assets
+          aws cloudfront create-invalidation \
+            --distribution-id $(aws cloudfront list-distributions \
+              --query "DistributionList.Items[?DomainName=='$CLOUDFRONT_DOMAIN'].Id" --output text) \
+            --paths "/*"
 
-      # - name: Summary
-      #   run: |
-      #     echo "✅ Deployed ChatLab"
-      #     echo "🌐 Site:  $SITE_URL"
-      #     echo "🧠 API:   $SITE_URL/api"
-      #     echo "🗄️  DB:    $RDS_ENDPOINT"
-      #     echo "🚀 EB:     $BEANSTALK_URL"
+      - name: Summary
+        run: |
+          echo "✅ Deployed ChatLab"
+          echo "🌐 Site:  $SITE_URL"
+          echo "🧠 API:   $SITE_URL/api"
+          echo "🗄️  DB:    $RDS_ENDPOINT"
+          echo "🚀 EB:     $BEANSTALK_URL"
