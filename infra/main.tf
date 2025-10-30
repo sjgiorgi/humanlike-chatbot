@@ -63,14 +63,25 @@ resource "aws_elastic_beanstalk_application" "app" {
 resource "aws_elastic_beanstalk_environment" "env" {
   name                = "${var.project_name}-env"
   application         = aws_elastic_beanstalk_application.app.name
-  solution_stack_name = "64bit Amazon Linux 2 v3.5.3 running Docker"
+  platform_arn        = "arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux 2023"
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "IamInstanceProfile"
+    value     = aws_iam_instance_profile.eb_instance_profile.name
+  }
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "DATABASE_URL"
-    value     = "mysql://${var.db_username}:${var.db_password}@${aws_db_instance.chatlab_db.address}:3306/${var.project_name}"
+    name      = "ENV"
+    value     = "production"
+  }
+
+  tags = {
+    Name = "${var.project_name}-env"
   }
 }
+
 
 # ---------------------------
 # Route53 hosted zone lookup (must already exist)
