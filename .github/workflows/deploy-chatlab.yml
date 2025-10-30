@@ -82,6 +82,12 @@ jobs:
           fi
 
           echo "✅ Terraform backend ready."
+      
+      - name: 🧹 Clean Terraform local cache
+        working-directory: infra
+        run: |
+          rm -rf .terraform .terraform.lock.hcl terraform.tfstate* || true
+          echo "✅ Local Terraform cache cleared"
 
       - name: ⚙️ Initialize Terraform
         working-directory: infra
@@ -123,10 +129,17 @@ jobs:
             -var="root_domain=${{ github.event.inputs.root_domain }}" \
             -var="subdomain=${{ github.event.inputs.subdomain }}" || true
       
-      - name: 🧹 Force unlock Terraform state (if needed)
+      - name: 🧩 Force unlock Terraform state (safety net)
         working-directory: infra
         run: |
-          terraform force-unlock -force $(terraform show -json 2>/dev/null | jq -r '.lock_id // empty') || true
+          LOCK_ID=$(aws dynamodb scan --table-name chatlab-locks --region us-east-1 \
+            --query "Items[0].LockID.S" --output text 2>/dev/null || true)
+          if [ -n "$LOCK_ID" ] && [ "$LOCK_ID" != "None" ]; then
+            echo "⚠️ Found lock $LOCK_ID — forcing unlock..."
+            terraform force-unlock -force "$LOCK_ID" || true
+          else
+            echo "✅ No active lock found"
+          fi
 
       - name: 🚀 Deploy Terraform Infrastructure
         working-directory: infra
