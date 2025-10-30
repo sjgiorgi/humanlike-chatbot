@@ -70,7 +70,7 @@ jobs:
       #     echo "SITE_URL=$(terraform output -raw site_url)" >> $GITHUB_ENV
 
       - name: Build React Frontend
-        working-directory: frontend
+        working-directory: generic_chatbot_frontend
         run: |
           npm ci
           export REACT_APP_API_URL="${SITE_URL}/api"
