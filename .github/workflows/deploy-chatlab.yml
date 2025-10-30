@@ -122,6 +122,11 @@ jobs:
             -var="db_password=${{ github.event.inputs.db_password }}" \
             -var="root_domain=${{ github.event.inputs.root_domain }}" \
             -var="subdomain=${{ github.event.inputs.subdomain }}" || true
+      
+      - name: 🧹 Force unlock Terraform state (if needed)
+        working-directory: infra
+        run: |
+          terraform force-unlock -force $(terraform show -json 2>/dev/null | jq -r '.lock_id // empty') || true
 
       - name: 🚀 Deploy Terraform Infrastructure
         working-directory: infra
