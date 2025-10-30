@@ -56,7 +56,7 @@ jobs:
       - name: Terraform Apply
         id: tf
         working-directory: infra
-        run: terraform destroy -auto-approve -var "aws_region=${{ github.event.inputs.aws_region }}" -var "project_name=${{ github.event.inputs.project_name }}" -var "db_username=${{ github.event.inputs.db_username }}" -var "db_password=${{ github.event.inputs.db_password }}" -var "root_domain=${{ github.event.inputs.root_domain }}" -var "subdomain=${{ github.event.inputs.subdomain }}"
+        run: terraform apply -auto-approve -var "aws_region=${{ github.event.inputs.aws_region }}" -var "project_name=${{ github.event.inputs.project_name }}" -var "db_username=${{ github.event.inputs.db_username }}" -var "db_password=${{ github.event.inputs.db_password }}" -var "root_domain=${{ github.event.inputs.root_domain }}" -var "subdomain=${{ github.event.inputs.subdomain }}"
 
 
       - name: Read Terraform Outputs
