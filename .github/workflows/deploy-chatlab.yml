@@ -71,6 +71,8 @@ jobs:
 
       - name: Build React Frontend
         working-directory: generic_chatbot_frontend
+        env:
+          CI: false
         run: |
           npm ci
           export REACT_APP_API_URL="${SITE_URL}/api"
