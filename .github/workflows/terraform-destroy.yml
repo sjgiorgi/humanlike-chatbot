@@ -1,4 +1,4 @@
-name: 💣 Destroy ChatLab Infrastructure
+name: 💣 Destroy ChatLab Infrastructure (Safe Cleanup)
 
 on:
   workflow_dispatch:
@@ -64,7 +64,7 @@ jobs:
         working-directory: infra
         run: terraform init -input=false
 
-      - name: ⚠️ Show Destruction Plan
+      - name: 🧠 Show Destruction Plan
         working-directory: infra
         run: |
           terraform plan -destroy -input=false \
@@ -75,7 +75,7 @@ jobs:
             -var="root_domain=${{ github.event.inputs.root_domain }}" \
             -var="subdomain=${{ github.event.inputs.subdomain }}"
 
-      - name: 💥 Destroy All Terraform Resources
+      - name: 💥 Destroy Terraform Resources
         working-directory: infra
         run: |
           terraform destroy -auto-approve -input=false \
@@ -84,18 +84,40 @@ jobs:
             -var="db_username=${{ github.event.inputs.db_username }}" \
             -var="db_password=${{ github.event.inputs.db_password }}" \
             -var="root_domain=${{ github.event.inputs.root_domain }}" \
-            -var="subdomain=${{ github.event.inputs.subdomain }}"
+            -var="subdomain=${{ github.event.inputs.subdomain }}" || true
 
       - name: 🧹 Force cleanup of leftover AWS resources
         run: |
           echo "Cleaning up any residual AWS resources..."
-          aws s3 rb s3://chatlab-${{ github.event.inputs.subdomain }}-frontend --force || true
-          aws elasticbeanstalk delete-application --application-name chatlab --terminate-env-by-force || true
-          aws iam delete-role --role-name chatlab-eb-ec2-role || true
-          aws iam delete-instance-profile --instance-profile-name chatlab-eb-instance-profile || true
-          aws rds delete-db-instance --db-instance-identifier chatlab-db --skip-final-snapshot || true
-          aws rds delete-db-subnet-group --db-subnet-group-name chatlab-db-subnet || true
+          
+          # IAM role and instance profile cleanup
+          aws iam get-role --role-name chatlab-eb-ec2-role 2>/dev/null && \
+            aws iam delete-role --role-name chatlab-eb-ec2-role || echo "IAM role clean."
+          aws iam get-instance-profile --instance-profile-name chatlab-eb-instance-profile 2>/dev/null && \
+            aws iam delete-instance-profile --instance-profile-name chatlab-eb-instance-profile || echo "Instance profile clean."
+
+          # RDS subnet group cleanup
+          aws rds describe-db-subnet-groups --query "DBSubnetGroups[?DBSubnetGroupName=='chatlab-db-subnet'].DBSubnetGroupName" --output text | \
+            grep chatlab-db-subnet && aws rds delete-db-subnet-group --db-subnet-group-name chatlab-db-subnet || echo "RDS subnet clean."
+
+          # CloudFront Origin Access Control cleanup
           aws cloudfront list-origin-access-controls \
             --query "OriginAccessControls[?Name=='ChatLab-OAC'].Id" --output text | \
-            xargs -I {} aws cloudfront delete-origin-access-control --id {} || true
+            xargs -I {} aws cloudfront delete-origin-access-control --id {} || echo "OAC clean."
+
+          # Route53 CNAME cleanup
+          HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name ${{ github.event.inputs.root_domain }} --query "HostedZones[0].Id" --output text)
+          aws route53 list-resource-record-sets \
+            --hosted-zone-id $HOSTED_ZONE_ID \
+            --query "ResourceRecordSets[?Name | contains('_26cb8c89a480906084b2ffdfc7469a7b')]" \
+            --output json | jq -r '.[].Name' | while read RECORD; do
+              aws route53 change-resource-record-sets \
+                --hosted-zone-id $HOSTED_ZONE_ID \
+                --change-batch "{\"Changes\": [{\"Action\": \"DELETE\", \"ResourceRecordSet\": {\"Name\": \"$RECORD\", \"Type\": \"CNAME\"}}]}" || true
+            done
+
+          # S3 bucket cleanup
+          aws s3 rb s3://chatlab-${{ github.event.inputs.subdomain }}-frontend --force || true
+          aws s3 rb s3://chatlab-terraform-state --force || true
+
           echo "✅ Force cleanup complete."
