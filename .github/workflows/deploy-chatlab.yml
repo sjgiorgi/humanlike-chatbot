@@ -68,7 +68,7 @@ jobs:
         run: |
           echo "Cleaning up any previous partial deploys..."
 
-          # IAM Role cleanup
+          # IAM role cleanup
           aws iam get-role --role-name chatlab-eb-ec2-role 2>/dev/null && \
             aws iam delete-role --role-name chatlab-eb-ec2-role || echo "IAM role clean."
 
@@ -79,6 +79,10 @@ jobs:
           # RDS subnet group cleanup
           aws rds describe-db-subnet-groups --query "DBSubnetGroups[?DBSubnetGroupName=='chatlab-db-subnet'].DBSubnetGroupName" --output text | \
             grep chatlab-db-subnet && aws rds delete-db-subnet-group --db-subnet-group-name chatlab-db-subnet || echo "RDS subnet clean."
+
+          # Elastic Beanstalk application cleanup
+          aws elasticbeanstalk describe-applications --query "Applications[?ApplicationName=='chatlab'].ApplicationName" --output text | \
+            grep chatlab && aws elasticbeanstalk delete-application --application-name chatlab --terminate-env-by-force || echo "EB app clean."
 
           # CloudFront Origin Access Control cleanup
           aws cloudfront list-origin-access-controls \
@@ -97,6 +101,7 @@ jobs:
             done
 
           echo "✅ Cleanup complete."
+
 
 
       - name: ⚙️ Initialize Terraform
