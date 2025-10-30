@@ -1,0 +1,79 @@
+name: 💣 Reset ChatLab AWS Environment (Full Cleanup)
+
+on:
+  workflow_dispatch:
+    inputs:
+      root_domain:
+        description: "Base domain (e.g., chatlab-test.com)"
+        required: true
+      subdomain:
+        description: "Subdomain (e.g., chatlab)"
+        required: true
+        default: "chatlab"
+
+permissions:
+  contents: read
+
+jobs:
+  reset:
+    name: Destroy All ChatLab Infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+
+    steps:
+      - name: 🧱 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: 🧹 Clean ChatLab AWS resources
+        run: |
+          echo "🔥 Beginning full cleanup for ChatLab..."
+
+          SUBDOMAIN="${{ github.event.inputs.subdomain }}"
+          DOMAIN="${{ github.event.inputs.root_domain }}"
+          FRONTEND_BUCKET="chatlab-${SUBDOMAIN}-frontend"
+
+          echo "🧩 Cleaning IAM resources..."
+          if aws iam get-instance-profile --instance-profile-name chatlab-eb-instance-profile >/dev/null 2>&1; then
+            echo "🔗 Detaching role from instance profile..."
+            aws iam remove-role-from-instance-profile \
+              --instance-profile-name chatlab-eb-instance-profile \
+              --role-name chatlab-eb-ec2-role || true
+            aws iam delete-instance-profile \
+              --instance-profile-name chatlab-eb-instance-profile || true
+          fi
+
+          if aws iam get-role --role-name chatlab-eb-ec2-role >/dev/null 2>&1; then
+            aws iam delete-role --role-name chatlab-eb-ec2-role || true
+          fi
+
+          echo "🧩 Cleaning Elastic Beanstalk..."
+          aws elasticbeanstalk delete-application \
+            --application-name chatlab \
+            --terminate-env-by-force || true
+
+          echo "🧩 Cleaning RDS..."
+          aws rds delete-db-instance \
+            --db-instance-identifier chatlab-db \
+            --skip-final-snapshot || true
+          aws rds delete-db-subnet-group \
+            --db-subnet-group-name chatlab-db-subnet || true
+
+          echo "🧩 Cleaning CloudFront..."
+          OAC_ID=$(aws cloudfront list-origin-access-controls \
+            --query "OriginAccessControls[?Name=='ChatLab-OAC'].Id" --output text || true)
+          if [ -n "$OAC_ID" ] && [ "$OAC_ID" != "None" ]; then
+            aws cloudfront delete-origin-access-control --id "$OAC_ID" || true
+          fi
+
+          echo "🧩 Cleaning Route53 validation records..."
+          RECORD
