@@ -208,7 +208,7 @@ resource "aws_acm_certificate_validation" "cert" {
 ########################################
 
 resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = "ChatLab-OAC"
+  name                              = "ChatLab-OAC-v2"
   description                       = "OAC for ChatLab static frontend"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
