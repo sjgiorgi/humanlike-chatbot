@@ -234,7 +234,7 @@ resource "aws_cloudfront_distribution" "site" {
   comment             = "ChatLab static + API CDN"
   default_root_object = "index.html"
 
-  origins {
+  origin {
     domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id   = "S3-${aws_s3_bucket.frontend.bucket}"
 
@@ -243,7 +243,7 @@ resource "aws_cloudfront_distribution" "site" {
     }
   }
 
-  origins {
+  origin {
     domain_name = aws_elastic_beanstalk_environment.env.endpoint_url
     origin_id   = "EB-${aws_elastic_beanstalk_environment.env.name}"
 
@@ -255,7 +255,6 @@ resource "aws_cloudfront_distribution" "site" {
     }
   }
 
-  # Default: serve frontend
   default_cache_behavior {
     target_origin_id       = "S3-${aws_s3_bucket.frontend.bucket}"
     viewer_protocol_policy = "redirect-to-https"
@@ -272,7 +271,6 @@ resource "aws_cloudfront_distribution" "site" {
     cached_methods   = ["GET", "HEAD"]
   }
 
-  # API routes
   ordered_cache_behavior {
     path_pattern           = "/api/*"
     target_origin_id       = "EB-${aws_elastic_beanstalk_environment.env.name}"
@@ -294,7 +292,6 @@ resource "aws_cloudfront_distribution" "site" {
     max_ttl          = 0
   }
 
-  # WebSocket routes
   ordered_cache_behavior {
     path_pattern           = "/ws/*"
     target_origin_id       = "EB-${aws_elastic_beanstalk_environment.env.name}"
@@ -321,8 +318,8 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   viewer_certificate {
-    acm_certificate_arn = aws_acm_certificate.cert.arn
-    ssl_support_method  = "sni-only"
+    acm_certificate_arn      = aws_acm_certificate.cert.arn
+    ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
@@ -337,6 +334,7 @@ resource "aws_cloudfront_distribution" "site" {
     aws_elastic_beanstalk_environment.env
   ]
 }
+
 
 
 
