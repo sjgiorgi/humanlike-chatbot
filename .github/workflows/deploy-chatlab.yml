@@ -147,17 +147,26 @@ jobs:
             -var="root_domain=${{ github.event.inputs.root_domain }}" \
             -var="subdomain=${{ github.event.inputs.subdomain }}" || true
       
-      - name: 🧩 Force unlock Terraform state (safety net)
-        working-directory: infra
+      - name: 🧹 Clear stale Terraform lock if exists
         run: |
-          LOCK_ID=$(aws dynamodb scan --table-name chatlab-locks --region us-east-1 \
-            --query "Items[0].LockID.S" --output text 2>/dev/null || true)
+          set -euo pipefail
+          TABLE_NAME="chatlab-locks"
+
+          echo "🔍 Checking for existing Terraform lock..."
+          LOCK_ID=$(aws dynamodb scan \
+            --table-name "$TABLE_NAME" \
+            --query "Items[0].LockID.S" \
+            --output text 2>/dev/null || true)
+
           if [ -n "$LOCK_ID" ] && [ "$LOCK_ID" != "None" ]; then
-            echo "⚠️ Found lock $LOCK_ID — forcing unlock..."
-            terraform force-unlock -force "$LOCK_ID" || true
+            echo "⚠️ Found stale lock ($LOCK_ID). Removing..."
+            aws dynamodb delete-item \
+              --table-name "$TABLE_NAME" \
+              --key "{\"LockID\": {\"S\": \"$LOCK_ID\"}}" || true
           else
-            echo "✅ No active lock found"
+            echo "✅ No stale lock detected."
           fi
+
 
       - name: 🧩 Import existing CloudFront OAC (if present)
         run: |
