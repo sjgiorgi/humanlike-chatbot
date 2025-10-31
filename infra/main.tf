@@ -1,42 +1,25 @@
-########################################
-# PROVIDER CONFIGURATION
-########################################
-
-terraform {
-  backend "s3" {
-    bucket         = "chatlab-terraform-state"
-    key            = "prod/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "chatlab-locks"
-  }
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-  required_version = ">= 1.6.0"
-}
-
 provider "aws" {
   region = var.aws_region
 }
 
-########################################
-# LOCALS
-########################################
-
 locals {
-  fqdn = "${var.subdomain}.${var.root_domain}"
+  fqdn             = "${var.subdomain}.${var.root_domain}"
+  s3_frontend_name = "${var.project_name}-${var.project_name}-frontend"
 }
 
-########################################
-# S3 FRONTEND HOSTING
-########################################
+# -------------------------
+# Route53 hosted zone lookup
+# -------------------------
+data "aws_route53_zone" "main" {
+  name         = var.root_domain
+  private_zone = false
+}
 
+# -------------------------
+# S3 bucket for frontend + OAC policy lock-down
+# -------------------------
 resource "aws_s3_bucket" "frontend" {
-  bucket = "${var.project_name}-${var.subdomain}-frontend"
-  force_destroy = true
+  bucket = local.s3_frontend_name
 }
 
 resource "aws_s3_bucket_ownership_controls" "frontend" {
@@ -54,66 +37,48 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
   restrict_public_buckets = true
 }
 
-########################################
-# RDS DATABASE
-########################################
-
-resource "aws_db_subnet_group" "chatlab_db_subnet" {
-  name       = "${var.project_name}-db-subnet"
-  subnet_ids = data.aws_subnets.default.ids
+# -------------------------
+# ACM certificate (us-east-1 required by CloudFront)
+# -------------------------
+provider "aws" {
+  alias  = "use1"
+  region = "us-east-1"
 }
 
-resource "aws_db_instance" "chatlab_db" {
-  identifier              = "${var.project_name}-db"
-  allocated_storage       = 20
-  engine                  = "mysql"
-  engine_version          = "8.0"
-  instance_class          = "db.t3.micro"
-  username                = var.db_username
-  password                = var.db_password
-  db_subnet_group_name    = aws_db_subnet_group.chatlab_db_subnet.name
-  skip_final_snapshot     = true
-  publicly_accessible     = true
+resource "aws_acm_certificate" "cert" {
+  provider          = aws.use1
+  domain_name       = local.fqdn
+  validation_method = "DNS"
 }
 
-data "aws_vpc" "default" {
-  default = true
+resource "aws_route53_record" "cert_validation" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = aws_acm_certificate.cert.domain_validation_options[0].resource_record_name
+  type    = aws_acm_certificate.cert.domain_validation_options[0].resource_record_type
+  records = [aws_acm_certificate.cert.domain_validation_options[0].resource_record_value]
+  ttl     = 300
 }
 
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
+resource "aws_acm_certificate_validation" "cert" {
+  provider                = aws.use1
+  certificate_arn         = aws_acm_certificate.cert.arn
+  validation_record_fqdns = [aws_route53_record.cert_validation.fqdn]
 }
 
-########################################
-# IAM ROLES AND INSTANCE PROFILE
-########################################
+# -------------------------
+# Elastic Beanstalk (Docker)
+# -------------------------
+resource "aws_elastic_beanstalk_application" "app" {
+  name        = var.project_name
+  description = "ChatLab backend EB app"
+}
 
 resource "aws_iam_role" "eb_ec2_role" {
   name = "${var.project_name}-eb-ec2-role"
-
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
-      Action = "sts:AssumeRole"
-    }]
+    Version = "2012-10-17",
+    Statement = [{ Effect = "Allow", Principal = { Service = "ec2.amazonaws.com" }, Action = "sts:AssumeRole" }]
   })
-}
-
-resource "aws_iam_role_policy_attachment" "eb_ec2_policy" {
-  role       = aws_iam_role.eb_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier"
-}
-
-resource "aws_iam_role_policy_attachment" "eb_ec2_cloudwatch" {
-  role       = aws_iam_role.eb_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
 resource "aws_iam_instance_profile" "eb_instance_profile" {
@@ -121,136 +86,110 @@ resource "aws_iam_instance_profile" "eb_instance_profile" {
   role = aws_iam_role.eb_ec2_role.name
 }
 
-########################################
-# ELASTIC BEANSTALK BACKEND
-########################################
-
-resource "aws_elastic_beanstalk_application" "app" {
-  name        = var.project_name
-  description = "Elastic Beanstalk app for ChatLab backend"
-}
-
+# Minimal EB environment (Docker)
 resource "aws_elastic_beanstalk_environment" "env" {
   name                = "${var.project_name}-env"
   application         = aws_elastic_beanstalk_application.app.name
-  platform_arn        = "arn:aws:elasticbeanstalk:${var.aws_region}::platform/Docker running on 64bit Amazon Linux 2023"
+  solution_stack_name = "64bit Amazon Linux 2 v3.9.2 running Docker"
+
+  # Useful defaults: single instance to start
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MinSize"
+    value     = "1"
+  }
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MaxSize"
+    value     = "1"
+  }
+  # Env vars (add your own as needed)
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "DJANGO_SETTINGS_MODULE"
+    value     = "generic_chatbot.settings.production"
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ALLOWED_HOSTS"
+    value     = "${local.fqdn},${self.cname}"
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "USE_X_FORWARDED_HOST"
+    value     = "True"
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "SECURE_PROXY_SSL_HEADER"
+    value     = "HTTP_X_FORWARDED_PROTO, https"
+  }
+
+  # Health check that matches your API
+  setting {
+    namespace = "aws:elb:healthcheck"
+    name      = "Interval"
+    value     = "10"
+  }
+  setting {
+    namespace = "aws:elb:healthcheck"
+    name      = "HealthyThreshold"
+    value     = "3"
+  }
+  setting {
+    namespace = "aws:elb:healthcheck"
+    name      = "UnhealthyThreshold"
+    value     = "5"
+  }
+  setting {
+    namespace = "aws:elb:healthcheck"
+    name      = "Timeout"
+    value     = "5"
+  }
+  setting {
+    namespace = "aws:elb:healthcheck"
+    name      = "Target"
+    value     = "HTTP:80/api/health"
+  }
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "IamInstanceProfile"
     value     = aws_iam_instance_profile.eb_instance_profile.name
   }
-
-  # Environment variables for Django backend
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "DATABASE_URL"
-    value     = "mysql://${var.db_username}:${var.db_password}@${aws_db_instance.chatlab_db.address}:3306/chatlab"
-  }
-
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "DJANGO_SETTINGS_MODULE"
-    value     = "generic_chatbot.settings.production"
-  }
-
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "DEBUG"
-    value     = "False"
-  }
-
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ALLOWED_HOSTS"
-    value     = "*"
-  }
-
-  tags = {
-    Name        = "${var.project_name}-env"
-    Environment = "production"
-  }
-
-  lifecycle {
-    ignore_changes = [
-      setting
-    ]
-  }
 }
 
-########################################
-# DOMAIN + SSL (ACM + ROUTE 53)
-########################################
-
-data "aws_route53_zone" "root" {
-  name         = "${var.root_domain}."
-  private_zone = false
-}
-
-resource "aws_acm_certificate" "cert" {
-  domain_name       = local.fqdn
-  validation_method = "DNS"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-
-
-resource "aws_acm_certificate_validation" "cert" {
-  certificate_arn         = aws_acm_certificate.cert.arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
-}
-
-########################################
-# CLOUDFRONT DISTRIBUTION
-########################################
-
+# -------------------------
+# CloudFront OAC + Distribution (S3 default, EB for /api, /ws)
+# -------------------------
 resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = "ChatLab-OAC-v2"
-  description                       = "OAC for ChatLab static frontend"
+  name                              = "ChatLab-OAC"
+  description                       = "OAC for ${local.s3_frontend_name}"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
-
-  lifecycle {
-    ignore_changes = all
-  }
-
-  # Prevent Terraform from failing if OAC already exists
-  provisioner "local-exec" {
-    when    = create
-    command = "echo '✅ CloudFront OAC exists or created successfully. Continuing...'"
-    on_failure = continue
-  }
 }
-
-
 
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
-  is_ipv6_enabled     = true
-  comment             = "ChatLab static + API CDN"
+  comment             = "ChatLab Distribution"
+  aliases             = [local.fqdn]
   default_root_object = "index.html"
 
   origin {
-    domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
-    origin_id   = "S3-${aws_s3_bucket.frontend.bucket}"
-
-    s3_origin_config {
-      origin_access_identity = ""
-    }
+    origin_id                = "S3-${aws_s3_bucket.frontend.bucket}"
+    domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
   }
 
+  # EB origin (HTTP to keep it simple/robust)
   origin {
-    domain_name = aws_elastic_beanstalk_environment.env.endpoint_url
     origin_id   = "EB-${aws_elastic_beanstalk_environment.env.name}"
-
+    domain_name = aws_elastic_beanstalk_environment.env.cname
     custom_origin_config {
       http_port              = 80
       https_port             = 443
-      origin_protocol_policy = "https-only"
+      origin_protocol_policy = "http-only"  # <— key: CF talks HTTP to EB
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
@@ -258,100 +197,94 @@ resource "aws_cloudfront_distribution" "site" {
   default_cache_behavior {
     target_origin_id       = "S3-${aws_s3_bucket.frontend.bucket}"
     viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
     compress               = true
 
     forwarded_values {
       query_string = false
-      cookies {
-        forward = "none"
-      }
+      cookies { forward = "none" }
     }
-
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD"]
   }
 
   ordered_cache_behavior {
     path_pattern           = "/api/*"
     target_origin_id       = "EB-${aws_elastic_beanstalk_environment.env.name}"
     viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods         = ["GET", "HEAD", "OPTIONS"]
     compress               = true
 
     forwarded_values {
       query_string = true
-      headers      = ["Authorization", "Content-Type"]
-      cookies {
-        forward = "all"
-      }
+      headers      = ["*"]
+      cookies { forward = "all" }
     }
-
-    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    min_ttl          = 0
-    default_ttl      = 0
-    max_ttl          = 0
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
   }
 
   ordered_cache_behavior {
     path_pattern           = "/ws/*"
     target_origin_id       = "EB-${aws_elastic_beanstalk_environment.env.name}"
     viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = false
 
     forwarded_values {
       query_string = true
-      cookies {
-        forward = "all"
-      }
+      headers      = ["*"]
+      cookies { forward = "all" }
     }
-
-    allowed_methods = ["GET", "HEAD", "OPTIONS"]
-    cached_methods  = ["GET", "HEAD", "OPTIONS"]
-    min_ttl         = 0
-    default_ttl     = 0
-    max_ttl         = 0
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
   }
 
   restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
+    geo_restriction { restriction_type = "none" }
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate.cert.arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
+    acm_certificate_arn            = aws_acm_certificate_validation.cert.certificate_arn
+    ssl_support_method             = "sni-only"
+    minimum_protocol_version       = "TLSv1.2_2021"
+    cloudfront_default_certificate = false
   }
-
-  price_class = "PriceClass_100"
-
-  tags = {
-    Name = "ChatLab CloudFront"
-  }
-
-  depends_on = [
-    aws_acm_certificate_validation.cert,
-    aws_elastic_beanstalk_environment.env
-  ]
 }
 
+# Lock-down bucket to CloudFront (OAC)
+data "aws_caller_identity" "me" {}
 
+resource "aws_s3_bucket_policy" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Sid: "AllowCloudFrontRead",
+      Effect: "Allow",
+      Principal: { Service: "cloudfront.amazonaws.com" },
+      Action: ["s3:GetObject"],
+      Resource: "arn:aws:s3:::${aws_s3_bucket.frontend.bucket}/*",
+      Condition: {
+        StringEquals: {
+          "AWS:SourceArn": "arn:aws:cloudfront::${data.aws_caller_identity.me.account_id}:distribution/${aws_cloudfront_distribution.site.id}"
+        }
+      }
+    }]
+  })
+}
 
-
-
-resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.cert.domain_validation_options : dvo.domain_name => {
-      name  = dvo.resource_record_name
-      type  = dvo.resource_record_type
-      value = dvo.resource_record_value
-    }
+# Route53 A-ALIAS → CloudFront
+resource "aws_route53_record" "app_alias" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = local.fqdn
+  type    = "A"
+  alias {
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = "Z2FDTNDATAQYW2" # CloudFront hosted zone ID (global)
+    evaluate_target_health = false
   }
-
-  zone_id         = data.aws_route53_zone.root.zone_id
-  name            = each.value.name
-  type            = each.value.type
-  ttl             = 60
-  records         = [each.value.value]
-  allow_overwrite = true
 }
