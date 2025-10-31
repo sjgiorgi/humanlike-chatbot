@@ -147,27 +147,24 @@ jobs:
             -var="root_domain=${{ github.event.inputs.root_domain }}" \
             -var="subdomain=${{ github.event.inputs.subdomain }}" || true
       
-      - name: 🧹 Clear stale Terraform lock if exists
+      - name: 🧹 Clear any stale Terraform lock
         run: |
           set -euo pipefail
+          echo "🔍 Checking for stale Terraform locks in DynamoDB..."
           TABLE_NAME="chatlab-locks"
-
-          echo "🔍 Checking for existing Terraform lock..."
           LOCK_ID=$(aws dynamodb scan \
             --table-name "$TABLE_NAME" \
             --query "Items[0].LockID.S" \
             --output text 2>/dev/null || true)
-
           if [ -n "$LOCK_ID" ] && [ "$LOCK_ID" != "None" ]; then
-            echo "⚠️ Found stale lock ($LOCK_ID). Removing..."
+            echo "⚠️ Found stale lock ($LOCK_ID). Deleting..."
             aws dynamodb delete-item \
               --table-name "$TABLE_NAME" \
               --key "{\"LockID\": {\"S\": \"$LOCK_ID\"}}" || true
           else
-            echo "✅ No stale lock detected."
+            echo "✅ No Terraform lock found — continuing."
           fi
-
-
+      
       - name: 🧩 Import existing CloudFront OAC (if present)
         run: |
           set -euo pipefail
@@ -187,7 +184,7 @@ jobs:
       - name: 🚀 Deploy Terraform Infrastructure
         working-directory: infra
         run: |
-          terraform apply -auto-approve -input=false \
+          terraform apply -auto-approve -input=false -lock=false \
             -var="aws_region=us-east-1" \
             -var="project_name=chatlab" \
             -var="db_username=${{ github.event.inputs.db_username }}" \

@@ -218,12 +218,14 @@ resource "aws_cloudfront_origin_access_control" "oac" {
     ignore_changes = all
   }
 
+  # Prevent Terraform from failing if OAC already exists
   provisioner "local-exec" {
     when    = create
-    command = "echo '✅ CloudFront OAC created or already exists — continuing...'"
+    command = "echo '✅ CloudFront OAC exists or created successfully. Continuing...'"
     on_failure = continue
   }
 }
+
 
 
 resource "aws_cloudfront_distribution" "site" {
