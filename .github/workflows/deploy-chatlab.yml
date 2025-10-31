@@ -159,6 +159,22 @@ jobs:
             echo "✅ No active lock found"
           fi
 
+      - name: 🧩 Import existing CloudFront OAC (if present)
+        run: |
+          set -euo pipefail
+          echo "🔍 Checking for existing CloudFront Origin Access Control (OAC)..."
+
+          OAC_ID=$(aws cloudfront list-origin-access-controls \
+            --query "OriginAccessControls[?Name=='ChatLab-OAC'].Id" \
+            --output text || true)
+
+          if [ -n "$OAC_ID" ] && [ "$OAC_ID" != "None" ]; then
+            echo "🪣 Importing existing CloudFront OAC ($OAC_ID) into Terraform state..."
+            terraform import aws_cloudfront_origin_access_control.oac "$OAC_ID" || true
+          else
+            echo "✅ No existing OAC found — Terraform will create a new one."
+          fi
+
       - name: 🚀 Deploy Terraform Infrastructure
         working-directory: infra
         run: |
